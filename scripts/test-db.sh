@@ -43,4 +43,10 @@ $PSQL -d app_bundle2 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
 for f in "$ROOT"/supabase/migrations/2026010[1-7]*.sql; do $PSQL -d app_bundle2 -f "$f" >/dev/null; done
 $PSQL -d app_bundle2 -f "$ROOT/supabase/bundles/after-07.sql" >/dev/null
 echo "  ok - the after-07 bundle applies cleanly after migrations 01-07"
+# The smallest bundle must work on top of migrations 01-08.
+$PSQL -d postgres -c "create database app_bundle3" >/dev/null
+$PSQL -d app_bundle3 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
+for f in "$ROOT"/supabase/migrations/2026010[1-8]*.sql; do $PSQL -d app_bundle3 -f "$f" >/dev/null; done
+$PSQL -d app_bundle3 -f "$ROOT/supabase/bundles/after-08.sql" >/dev/null
+echo "  ok - the after-08 bundle applies cleanly after migrations 01-08"
 echo "DB tests passed"

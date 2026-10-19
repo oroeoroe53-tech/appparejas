@@ -137,4 +137,156 @@ $$;
 revoke all on function public.set_my_timezone(text), public.write_open_when(text, text, text), public.open_open_when(uuid), public.delete_open_when(uuid) from public, anon, authenticated;
 grant execute on function public.set_my_timezone(text), public.write_open_when(text, text, text), public.open_open_when(uuid), public.delete_open_when(uuid) to authenticated;
 
+-- ===== 20260109000000_hug_clothes.sql =====
+
+-- Characters get clothes (top, scarf, hat) and a new gesture: the hug.
+-- The hug is a wordless message of its own type, so it flows through the same push, privacy and read logic.
+
+-- 1) New message type --------------------------------------------------------------
+alter table public.messages drop constraint messages_message_type_check;
+alter table public.messages add constraint messages_message_type_check check (message_type in (
+  'love_letter', 'little_note', 'heart_message', 'hug_in_words', 'secret_message', 'old_letter',
+  'quick', 'thinking_of_you', 'voice_note', 'drawing', 'hug'));
+
+-- 2) send_message accepts 'hug' (100 chars max, no song, not schedulable, shares the "ping" limiter) --
+drop function public.send_message(text, text, uuid, jsonb, jsonb, timestamptz);
+
+create function public.send_message(
+  p_content text, p_type text, p_client_id uuid,
+  p_song jsonb default null, p_attachment jsonb default null, p_deliver_at timestamptz default null
+) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  uid uuid := (select auth.uid());
+  sp uuid;
+  sp_status text;
+  rcpt uuid;
+  clean text := btrim(coalesce(p_content, ''));
+  max_len integer;
+  att_path text;
+  att_secs integer;
+  existing public.messages;
+  created public.messages;
+begin
+  if uid is null then raise exception 'not_authenticated'; end if;
+  if p_client_id is null then raise exception 'invalid_content'; end if;
+
+  max_len := case p_type
+    when 'thinking_of_you' then 100
+    when 'hug' then 100
+    when 'little_note' then 280
+    when 'voice_note' then 300
+    when 'drawing' then 300
+    when 'quick' then 500
+    when 'heart_message' then 500
+    when 'hug_in_words' then 1000
+    when 'secret_message' then 1500
+    when 'love_letter' then 3000
+    when 'old_letter' then 3000
+    else null end;
+  if max_len is null then raise exception 'invalid_message_type'; end if;
+  if clean = '' and p_type = 'voice_note' then clean := 'Voice note'; end if;
+  if clean = '' and p_type = 'drawing' then clean := 'Drawing'; end if;
+  if char_length(clean) = 0 or char_length(clean) > max_len then raise exception 'invalid_content'; end if;
+  if p_song is not null and jsonb_typeof(p_song) <> 'object' then raise exception 'invalid_song'; end if;
+  if p_type in ('thinking_of_you', 'hug', 'voice_note', 'drawing') and p_song is not null then raise exception 'invalid_song'; end if;
+
+  sp := public.my_space_id();
+  select status into sp_status from public.couple_spaces where id = sp;
+  if sp is null or sp_status <> 'active' then raise exception 'no_active_space'; end if;
+  rcpt := public.partner_of(sp);
+  if rcpt is null then raise exception 'no_active_space'; end if;
+
+  -- attachment: required for voice notes and drawings, forbidden otherwise
+  if p_type in ('voice_note', 'drawing') then
+    if p_attachment is null or jsonb_typeof(p_attachment) <> 'object' then raise exception 'invalid_attachment'; end if;
+    att_path := p_attachment ->> 'path';
+    begin
+      att_secs := (p_attachment ->> 'seconds')::integer;
+    exception when others then
+      raise exception 'invalid_attachment';
+    end;
+    if att_path is null or position(sp::text || '/' in att_path) <> 1 then raise exception 'invalid_attachment'; end if;
+    if not exists (select 1 from storage.objects where bucket_id = 'couple-media' and name = att_path) then
+      raise exception 'invalid_attachment';
+    end if;
+  elsif p_attachment is not null then
+    raise exception 'invalid_attachment';
+  end if;
+
+  if p_deliver_at is not null then
+    if p_type in ('thinking_of_you', 'hug') or p_deliver_at < now() + interval '1 minute' or p_deliver_at > now() + interval '5 years' then
+      raise exception 'invalid_schedule';
+    end if;
+  end if;
+
+  select * into existing from public.messages where sender_id = uid and client_id = p_client_id;
+  if found then
+    return jsonb_build_object('message', to_jsonb(existing), 'is_new', false);
+  end if;
+
+  perform public.consume_rate_limit('message', 30, interval '10 minutes');
+  if p_type in ('thinking_of_you', 'hug') then
+    perform public.consume_rate_limit('ping', 10, interval '10 minutes');
+  end if;
+
+  begin
+    insert into public.messages (
+      couple_space_id, sender_id, recipient_id, content, message_type, client_id, deliver_at,
+      attachment_path, attachment_seconds,
+      song_track_id, song_title, song_artist, song_preview_url, song_artwork_url, song_start, song_duration
+    ) values (
+      sp, uid, rcpt, clean, p_type, p_client_id, p_deliver_at,
+      att_path, att_secs,
+      p_song ->> 'track_id', p_song ->> 'title', p_song ->> 'artist', p_song ->> 'preview_url', p_song ->> 'artwork_url',
+      (p_song ->> 'start')::integer, (p_song ->> 'duration')::integer
+    )
+    returning * into created;
+  exception
+    when unique_violation then
+      select * into existing from public.messages where sender_id = uid and client_id = p_client_id;
+      return jsonb_build_object('message', to_jsonb(existing), 'is_new', false);
+    when check_violation or invalid_text_representation or numeric_value_out_of_range then
+      raise exception '%', case when p_song is not null then 'invalid_song' else 'invalid_attachment' end;
+  end;
+  return jsonb_build_object('message', to_jsonb(created), 'is_new', true);
+end;
+$$;
+
+revoke all on function public.send_message(text, text, uuid, jsonb, jsonb, timestamptz) from public, anon, authenticated;
+grant execute on function public.send_message(text, text, uuid, jsonb, jsonb, timestamptz) to authenticated;
+
+-- 3) save_character allows the clothing keys ----------------------------------------
+create or replace function public.save_character(p_config jsonb) returns void
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  sp uuid := public.my_space_id();
+  allowed text[] := array['head','hair','hairColor','skinColor','eyes','eyebrows','nose','mouth','glasses','beard',
+                          'earrings','freckles','hairAccessories','backgroundColor','eyesColor','eyebrowsColor',
+                          'glassesColor','mouthColor','top','topColor','scarf','scarfColor','hat','hatColor'];
+  k text;
+  v jsonb;
+begin
+  if (select auth.uid()) is null then raise exception 'not_authenticated'; end if;
+  if sp is null or (select status from public.couple_spaces where id = sp) <> 'active' then raise exception 'no_active_space'; end if;
+  if p_config is null or jsonb_typeof(p_config) <> 'object' or octet_length(p_config::text) > 1200 then
+    raise exception 'invalid_character';
+  end if;
+  for k, v in select * from jsonb_each(p_config) loop
+    if not (k = any (allowed)) or jsonb_typeof(v) <> 'string' or (v #>> '{}') !~ '^[A-Za-z0-9]{1,16}$' then
+      raise exception 'invalid_character';
+    end if;
+  end loop;
+  perform public.consume_rate_limit('character', 60, interval '1 hour');
+  insert into public.characters (couple_space_id, designer_id, config)
+  values (sp, (select auth.uid()), p_config)
+  on conflict (couple_space_id, designer_id) do update set config = excluded.config, updated_at = now();
+end;
+$$;
+
+revoke all on function public.save_character(jsonb) from public, anon, authenticated;
+grant execute on function public.save_character(jsonb) to authenticated;
+
 commit;
