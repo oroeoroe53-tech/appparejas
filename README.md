@@ -135,6 +135,10 @@ Any Node host works; Vercel is the simplest.
 3. Icons are committed (`npm run icons` rebuilds them from `scripts/generate-icons.mjs`).
 4. Smoke test with two real accounts (below).
 
+### Automatic deploys
+
+Connect the repo in Vercel and set **Settings → Environments → Production → Branch Tracking** to the branch you deploy from. Every push to that branch is then published to production automatically. Vercel never touches the database: when a release adds SQL, apply it in Supabase **before** pushing the code.
+
 ### Daily job (time capsules and reminders)
 
 [`vercel.json`](vercel.json) schedules `GET /api/cron/daily` once a day at 07:00 UTC (the most frequent schedule Vercel's free plan allows). It (1) sends the notification for time capsules that opened, and (2) announces today's and tomorrow's plans, anniversaries and milestones to both people. Set `CRON_SECRET` in Vercel, then redeploy. Capsules become visible at 06:00 UTC on the chosen date, so the notification arrives within about an hour.
