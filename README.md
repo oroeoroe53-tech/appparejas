@@ -1,0 +1,153 @@
+# US — a little place for two
+
+A private PWA for two people. Instead of chat bubbles, messages arrive as small digital gestures: a sealed envelope, a taped note, a beating heart, a hug in words, or a secret that waits for the seal to break. Notifications are real Web Push (VAPID), not in-page toasts.
+
+> The product name lives in one place: [`src/config/brand.ts`](src/config/brand.ts). All UI copy lives in [`src/content/en.ts`](src/content/en.ts) (swap `src/content/index.ts` to add a translation).
+
+## Status at a glance
+
+| Area | Implemented | Verified here | Needs your setup |
+| --- | --- | --- | --- |
+| Sign up / in / out, password reset | yes | against a **mock** auth server only (session handling) | Supabase project, redirect URLs |
+| Invite + link two people (one-time, 48h, 2-member cap) | yes (SQL + UI) | **SQL tests on real Postgres 16** | – |
+| Send / read / react / history / search | yes | SQL tests on Postgres; UI against a **mock** API | – |
+| Row Level Security, minimum privilege | yes | **SQL tests on Postgres 16** (95+ assertions) | apply migration |
+| Five distinct message experiences + previews | yes | visually reviewed in headless Chromium | – |
+| Web Push send (VAPID + RFC 8291 encryption) | yes | **against a local HTTPS push-service stand-in** | VAPID keys, service-role key |
+| Push subscribe/unsubscribe, notification click → letter | yes | code reviewed; **not run on a real phone** | VAPID keys, HTTPS |
+| PWA manifest, service worker, offline page | yes | manifest/headers checked on a production server | HTTPS in production |
+| Production build, lint, typecheck | yes | all pass (see below) | – |
+
+Not verified: anything against a live Supabase project, real browser push services (FCM / Mozilla / Apple), iOS Home-Screen behaviour, or delivery on real devices. Treat those as "implemented, untested end-to-end" until you run the smoke test below.
+
+## Stack
+
+Next.js 16 (App Router, `proxy.ts`) · React 19 · TypeScript strict · Tailwind CSS 4 · Framer Motion · Supabase (Auth, Postgres, RLS) · `web-push`. Fonts are self-hosted via Fontsource (no third-party font requests).
+
+Why Route Handlers + Server Actions instead of Supabase Edge Functions: the only privileged work (sending push, deleting an account) is a few lines running next to the app, and keeping it there means one deployment and one set of secrets. The service-role key is used in exactly two places: [`src/server/push.ts`](src/server/push.ts) callers and account deletion.
+
+## Project structure
+
+```
+supabase/
+  migrations/20260101000000_init.sql   schema, RLS, grants, all RPC functions
+  tests/                               SQL harness + permission tests (real Postgres)
+src/
+  app/
+    (auth)/ login, register, forgot-password, reset-password
+    (app)/  home, write, letters, letters/[id], connect, settings, install  (signed-in shell + bottom nav)
+    welcome/ join/[token]/ offline/ setup/ auth/callback/
+    actions/   server actions (auth, couple, messages, settings)
+    api/push/  subscribe (POST/DELETE) and test (POST)
+    manifest.ts
+  components/
+    letters/   LoveLetter, LittleNote, HeartMessage, HugInWords, SecretMessage (+ MessageExperience)
+    write/ home/ settings/ connect/ auth/ ui/
+  lib/        validation (zod), notifications (payload builder), push-client, supabase clients, env
+  server/     queries, guards, push sender
+  proxy.ts    session refresh + route protection
+public/sw.js  service worker (push, offline page, static asset cache only)
+scripts/      test-db.sh, generate-icons.mjs, generate-vapid.mjs
+```
+
+## Run locally
+
+Requirements: Node 20.9+, a Supabase project (free tier is fine). A local Supabase via the CLI also works (`supabase init` → `supabase start`; the migration is plain SQL) but was not tested here.
+
+```bash
+npm install
+cp .env.example .env.local        # then fill it in (below)
+npm run vapid                     # prints a VAPID key pair; copy both values into .env.local
+npm run dev                       # http://localhost:3000
+```
+
+Without Supabase variables the app still builds and starts, and redirects to a `/setup` page that lists what is missing.
+
+### Environment variables
+
+| Variable | Scope | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | public | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | Supabase anon/publishable key (safe in the browser; RLS protects data) |
+| `NEXT_PUBLIC_SITE_URL` | public | Origin used for invitation links and auth redirects, no trailing slash |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | public | VAPID public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Reads push subscriptions / recipient preferences, deletes accounts |
+| `VAPID_PRIVATE_KEY` | **server only** | Signs push requests |
+| `VAPID_SUBJECT` | server | `mailto:` or `https:` contact for push services |
+
+`NEXT_PUBLIC_*` values are inlined at **build** time, so set them before `npm run build`. Never prefix a secret with `NEXT_PUBLIC_`. Nothing secret is committed; `.env*` is git-ignored except `.env.example`.
+
+## Configure Supabase
+
+1. Create a project at supabase.com.
+2. **Schema:** apply [`supabase/migrations/20260101000000_init.sql`](supabase/migrations/20260101000000_init.sql) — paste it into the SQL editor, or with the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
+3. **Auth → URL Configuration:** set *Site URL* to your `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to *Redirect URLs* (needed for email confirmation and password reset). Open those emailed links on the same device/browser that requested them (PKCE).
+4. **Auth → Providers → Email:** keep email/password on. Decide whether to require email confirmation (the app handles both). Set a sensible minimum password length (the app enforces 8).
+5. **Auth → Rate limits / SMTP:** the built-in mailer is heavily rate-limited; configure your own SMTP before real use.
+6. Copy the project URL, anon key and service-role key into your environment (Project Settings → API).
+
+The migration revokes default table/function privileges and grants only what is needed. All writes go through `SECURITY DEFINER` functions that read `auth.uid()` and ignore any client-supplied identity.
+
+## Configure Web Push
+
+1. `npm run vapid` → set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`.
+2. Serve over **HTTPS** (push requires a secure context; `localhost` is allowed for development). The service worker is only registered in production builds (`npm run build && npm start`), so test push against a production build.
+3. Signed in, go to **Settings → Notifications → Turn on notifications on this device** (the permission prompt appears only on that click), then **Send me a test notification**.
+4. **iPhone/iPad:** Web Push needs iOS/iPadOS 16.4+ and the app added to the Home Screen first. The in-app **Install** guide explains the steps and Settings explains why notifications are unavailable when it detects Safari without installation. **Android:** Chrome (install optional). Unsupported browsers keep working without notifications.
+
+Behaviour worth knowing: `push_status` on a message means the push service *accepted* the request, not that the phone showed it. A message is only marked read when the recipient actually opens it in the app, never because a notification was sent. Expired subscriptions (404/410) are deleted automatically; five consecutive failures also prune a device. A notification's `tag` is the message id, so retries can't stack duplicates.
+
+## Deploy
+
+Any Node host works; Vercel is the simplest.
+
+1. Push this repo, import it, and set all environment variables above (public ones **before** the first build).
+2. Set `NEXT_PUBLIC_SITE_URL` to the production origin and mirror it in Supabase Auth URL settings.
+3. Icons are committed (`npm run icons` rebuilds them from `scripts/generate-icons.mjs`).
+4. Smoke test with two real accounts (below).
+
+### Two-account smoke test (run this once after deploying)
+
+1. Account A registers → **Create invitation** → copies the link.
+2. Account B (different browser/device) opens the link, registers, **Accept and join**. Both land on Home.
+3. A writes a Love Letter → Preview → Send. A sees "Sent with care".
+4. B (app installed, notifications on) receives a notification; tapping it opens `/letters/<id>`; B opens the seal, reacts, replies.
+5. A sees "Opened" and B's reaction on the letter. Reload both sides: letters persist in **Our letters**.
+6. Try the same invitation link with a third account: it must say the invitation is no longer valid.
+
+## Tests and checks
+
+```bash
+npm run lint        # ESLint (Next + React rules)
+npm run typecheck   # tsc --noEmit (strict)
+npm test            # Vitest: validation, notification privacy, invite parsing, redirects, CSRF guard, real Web Push send
+npm run test:db     # applies the migration to a throwaway local Postgres and runs the permission tests
+npm run build       # production build
+```
+
+`test:db` needs PostgreSQL server binaries (it auto-detects `/usr/lib/postgresql/*/bin`; set `PGBIN` otherwise) and creates stand-ins for the Supabase-managed `auth` schema and roles ([`supabase/tests/00_stubs.sql`](supabase/tests/00_stubs.sql)). It exercises: signup trigger, anon lockout, invitation hashing/expiry/revocation/single-use, 2-member cap, cross-couple isolation, forged sender/recipient, idempotent sending, content limits, rate limits (including that failed invitation guesses are counted), read/react authorization, push-key column privileges, leaving a space, and account deletion cascade.
+
+## Privacy and security model
+
+- **Authorization is in the database.** RLS lets only the two members of a space read its messages; clients cannot insert/update/delete messages, members, invitations or push keys directly. Changing the id in a URL yields "not found".
+- **One partner, safely.** `unique(user_id)` on membership + a locked trigger cap a space at two people. A user in a couple can't accept another invitation; leaving is explicit (type `LEAVE`).
+- **Invitations:** ~150-bit random tokens (40 hex chars from the database CSPRNG), only their SHA-256 hash is stored, 48-hour expiry, single use, a new link revokes the old one, all attempts rate-limited (10 per 10 minutes) with generic failure responses.
+- **Rate limits:** 30 messages / 10 min, 5 invitations / hour, 10 join attempts / 10 min, 3 test notifications / 10 min.
+- **Notifications:** default "Private" shows only a warm generic line, with no content and no sender name on the lock screen. "Show the message" is opt-in.
+- **Web hardening:** security headers, same-origin check on cookie-authenticated JSON endpoints, open-redirect-safe `next` handling, no private content in the service-worker cache, no letter text in logs.
+
+### Known limitations (read these)
+
+- **Not end-to-end encrypted.** Letters are stored as text in your Supabase database (encrypted at rest by the provider). Whoever operates the database/project can read them. The app says so in Settings.
+- Database **backups** may retain deleted letters for the provider's retention window.
+- Leaving a space: the person who stays keeps read-only access to the letters; when the last person leaves, the space and all letters are deleted. Deleting an account deletes the letters you wrote and received.
+- Push delivery is best-effort and depends on the OS, browser, battery settings and connectivity. No instant-delivery promise.
+- **Offline:** the app never caches letters. Offline you get an explanatory page; the composer keeps a draft on the device and refuses to "send" until you are back online (so nothing ever looks sent when it isn't). There is no background send queue.
+- Realtime updates are not implemented: new letters appear on next navigation/refresh/notification tap.
+- Avatars are an optional https link (no upload/storage yet).
+- Email recovery links use PKCE: open them on the same browser that requested them.
+- English only for now (copy is centralised for translation).
+
+## Pending / ideas
+
+Realtime inbox, avatar upload, background-sync outbox, Spanish translation, a SQL test for concurrent accept races, Playwright E2E against a real Supabase project, and reading push delivery receipts.

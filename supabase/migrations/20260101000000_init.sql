@@ -512,6 +512,15 @@ begin
 end;
 $$;
 
+-- Throttle for the "send me a test notification" button (3 per 10 minutes).
+create function public.consume_test_push_limit() returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform public.consume_rate_limit('push_test', 3, interval '10 minutes');
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Execute grants: only the functions clients may call.
 -- ---------------------------------------------------------------------------
@@ -541,5 +550,6 @@ grant execute on function
   public.mark_message_read(uuid),
   public.react_to_message(uuid, text),
   public.register_push_subscription(text, text, text, text),
-  public.remove_push_subscription(text)
+  public.remove_push_subscription(text),
+  public.consume_test_push_limit()
 to authenticated;

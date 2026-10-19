@@ -189,6 +189,14 @@ select test.superuser();
 select test.ok((select user_id from public.push_subscriptions) = :a::uuid, 'endpoint re-registered on a shared device moves to the new user');
 select test.ok((select count(*) from public.push_subscriptions) = 1, 'still a single row per endpoint');
 
+-- ---- generic limiter is not callable by clients; the test-push wrapper is ----
+select test.login(:a);
+select test.throws($$select public.consume_rate_limit('x', 100000, interval '1 hour')$$, 'permission denied', 'clients cannot call the generic rate limiter');
+select public.consume_test_push_limit();
+select public.consume_test_push_limit();
+select public.consume_test_push_limit();
+select test.throws('select public.consume_test_push_limit()', 'rate_limited', 'test notification is limited to 3 per 10 minutes');
+
 -- ---- brute force: failed token guesses are counted ----
 select test.login(:d);
 do $$
