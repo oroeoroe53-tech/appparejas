@@ -1,0 +1,73 @@
+/* "Our book": a printable keepsake. Pages use fixed pastel colours so dark mode never changes the paper. */
+.book-root { --bk-ink: #4a3a3f; --bk-rose: #c4566c; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+.book-page {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 148 / 210; /* A5 portrait */
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--bp, #fde8ec);
+  color: var(--bk-ink);
+  box-shadow: 0 1px 2px rgb(56 45 42 / 0.08), 0 14px 30px -12px rgb(56 45 42 / 0.28);
+  display: flex;
+  flex-direction: column;
+  padding: 9cqw 8cqw 8cqw;
+  break-inside: avoid;
+}
+/* Tall content (a long letter) is allowed to grow the page instead of being cut. */
+.book-page[data-grow] { aspect-ratio: auto; min-height: calc(100cqw * 210 / 148); }
+.book-page::before {
+  content: "";
+  position: absolute;
+  inset: 3.2cqw;
+  border: 0.5cqw dashed rgb(196 86 108 / 0.35);
+  border-radius: 6cqw;
+  pointer-events: none;
+}
+.book-page::after { /* a faint dotted-paper texture */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(196 86 108 / 0.12) 0.35cqw, transparent 0.4cqw);
+  background-size: 5cqw 5cqw;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.book-page > * { position: relative; z-index: 1; }
+
+.bk-hand { font-family: var(--font-hand); }
+.bk-title { font-family: var(--font-serif); font-weight: 600; letter-spacing: -0.01em; }
+
+.bk-tape {
+  position: absolute;
+  width: 22cqw;
+  height: 6.5cqw;
+  background: repeating-linear-gradient(45deg, rgb(255 255 255 / 0.55) 0 1.2cqw, rgb(255 255 255 / 0.15) 1.2cqw 2.4cqw), var(--tape, #f6c1cc);
+  opacity: 0.92;
+  box-shadow: 0 0.4cqw 0.8cqw rgb(0 0 0 / 0.12);
+  clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 16% 10%, 20% 0, 24% 10%, 28% 0, 32% 10%, 36% 0, 40% 10%, 44% 0, 48% 10%, 52% 0, 56% 10%, 60% 0, 64% 10%, 68% 0, 72% 10%, 76% 0, 80% 10%, 84% 0, 88% 10%, 92% 0, 96% 10%, 100% 8%, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 84% 90%, 80% 100%, 76% 90%, 72% 100%, 68% 90%, 64% 100%, 60% 90%, 56% 100%, 52% 90%, 48% 100%, 44% 90%, 40% 100%, 36% 90%, 32% 100%, 28% 90%, 24% 100%, 20% 90%, 16% 100%, 12% 90%, 8% 100%, 4% 90%, 0 92%);
+}
+
+.bk-polaroid {
+  position: relative;
+  background: #fffdf8;
+  padding: 2.6cqw 2.6cqw 9cqw;
+  box-shadow: 0 0.6cqw 1.6cqw rgb(56 45 42 / 0.22);
+  break-inside: avoid;
+}
+.bk-polaroid img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #f1e6e1; }
+
+.bk-note { background: #fffdf8; border-radius: 3cqw; box-shadow: 0 0.5cqw 1.4cqw rgb(56 45 42 / 0.16); break-inside: avoid; }
+
+@media print {
+  @page { size: A5; margin: 0; }
+  html, body { background: #fff !important; }
+  .book-toolbar, nav[aria-label] { display: none !important; }
+  #main { max-width: none !important; width: 148mm !important; padding: 0 !important; margin: 0 !important; }
+  .book-stack { gap: 0 !important; }
+  .book-page { width: 148mm; border-radius: 0; box-shadow: none; break-after: page; page-break-after: always; margin: 0; }
+  .book-page:last-child { break-after: auto; page-break-after: auto; }
+  .book-page:not([data-grow]) { height: 210mm; aspect-ratio: auto; }
+}

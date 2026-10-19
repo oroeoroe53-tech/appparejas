@@ -58,6 +58,14 @@ export function TypeGlyph({ type, size = 48 }: { type: MessageType; size?: numbe
           <path d="M16 24v0M22 18v12M28 14v20M34 20v8M40 16v16M46 21v6" stroke="#9d394d" strokeWidth="2.6" strokeLinecap="round" />
         </svg>
       );
+    case "hug":
+      return (
+        <svg {...common}>
+          <circle cx="22" cy="20" r="11" fill="#f6d3cf" stroke="#9d394d" strokeWidth="1.6" />
+          <circle cx="42" cy="20" r="11" fill="#e9b8b8" stroke="#9d394d" strokeWidth="1.6" />
+          <path d="M10 44c4-8 10-9 22-9s18 1 22 9" stroke="#9d394d" strokeWidth="3" strokeLinecap="round" fill="none" />
+        </svg>
+      );
     case "drawing":
       return (
         <svg {...common}>

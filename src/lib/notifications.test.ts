@@ -36,6 +36,15 @@ describe("buildMessagePayload", () => {
     expect(buildMessagePayload({ ...base, content: "Drawing", type: "drawing", previewMode: "full" }).body).toMatch(/drawing/i);
   });
 
+  it("makes the phone buzz for a hug, in both privacy modes, and for nothing else", () => {
+    const full = buildMessagePayload({ ...base, content: "A hug", type: "hug", previewMode: "full" });
+    const generic = buildMessagePayload({ ...base, content: "A hug", type: "hug", previewMode: "generic" });
+    expect(full.vibrate?.length).toBeGreaterThan(2);
+    expect(generic.vibrate).toEqual(full.vibrate);
+    expect(full.body).toMatch(/hug/i);
+    expect(buildMessagePayload({ ...base, type: "quick", previewMode: "full" }).vibrate).toBeUndefined();
+  });
+
   it("deep-links to the message and tags per message so duplicates collapse", () => {
     const p = buildMessagePayload({ ...base, type: "little_note", previewMode: "generic" });
     expect(p.url).toBe("/letters/abc-123");

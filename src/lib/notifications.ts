@@ -15,7 +15,12 @@ export interface PushPayload {
   badge: string;
   /** Big picture (Android Chrome shows it; iOS ignores it). Only ever set by the server, only in full mode. */
   image?: string;
+  /** Vibration pattern in ms (Android). Only set for gestures like the hug. */
+  vibrate?: number[];
 }
+
+/** Slow, warm, like a squeeze. */
+export const HUG_VIBRATION = [220, 120, 220, 120, 520];
 
 export const PREVIEW_MAX_CHARS = 140;
 
@@ -37,12 +42,15 @@ export function buildMessagePayload(input: {
 }): PushPayload {
   const base = { ...ICONS, tag: `message-${input.messageId}`, url: `/letters/${input.messageId}` };
   if (input.previewMode === "generic") {
-    return { ...base, title: brand.name, body: t.types[input.type].notification };
+    return { ...base, ...(input.type === "hug" ? { vibrate: HUG_VIBRATION } : {}), title: brand.name, body: t.types[input.type].notification };
   }
   let body: string;
   switch (input.type) {
     case "thinking_of_you":
       body = t.ping.pushBody;
+      break;
+    case "hug":
+      body = t.hug.pushBody;
       break;
     case "voice_note":
       body = t.quick.pushBodyVoice;
@@ -54,7 +62,8 @@ export function buildMessagePayload(input: {
       body = truncate(input.content, PREVIEW_MAX_CHARS);
   }
   const image = input.type === "drawing" && input.imageUrl?.startsWith("https://") ? { image: input.imageUrl } : {};
-  return { ...base, ...image, title: input.senderName || brand.name, body };
+  const vibrate = input.type === "hug" ? { vibrate: HUG_VIBRATION } : {};
+  return { ...base, ...image, ...vibrate, title: input.senderName || brand.name, body };
 }
 
 /** For gifts, reminders and other non-message events. Respects the same privacy choice. */

@@ -6,6 +6,9 @@ A private PWA for two people. Instead of chat bubbles, messages arrive as small 
 
 - **Quick message:** type a line on Home, send, and it lands on their lock screen **with your words** (their notification privacy can be switched to a generic line in Settings).
 - **Thinking of you:** one tap, no words.
+- **Characters with clothes and life:** each of you draws the other (hair, eyes, glasses… plus tees, hoodies, sweaters, scarves and hats in any colour). The figure sleeps under a moon when it is night where they are, wakes up in the sun by day, and holds up an envelope when you have a message waiting.
+- **Hug:** one tap buzzes their phone (Android vibrates with the notification; iOS ignores vibration patterns) and both characters hug on screen.
+- **Our book (`/us/book`):** a cute printable keepsake built from what you already saved (story, photos, letters, reasons, daily questions, songs, dreams). Print it on A5 or save it as PDF from the browser.
 - **Letters with ceremony:** Love Letter, Little Note, Heart Message, Hug in Words, Secret Message and Old Letter (parchment, quill, red wax seal). Any message can carry a **song clip** and can be **scheduled** as a time capsule that opens on a chosen morning.
 - **Voice notes and drawings.** A drawing arrives whole on Home (tap for full screen) and, on Android, as the big picture of the notification.
 - **Your person, drawn by you:** each of you builds a character of the other (CC0 Lorelei art, 48 hairstyles, glasses, beard, freckles…). It lives on your Home screen, breathes and blinks, shows their mood, and you can see how they drew you.
@@ -100,7 +103,7 @@ Without Supabase variables the app still builds and starts, and redirects to a `
 1. Create a project at supabase.com.
 2. **Schema:** apply the files in [`supabase/migrations/`](supabase/migrations/) **in order** — paste each into the SQL editor, or use the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
    - **Applied only `init` and `old_letter_and_song`?** Paste [`supabase/bundles/after-02.sql`](supabase/bundles/after-02.sql): everything newer, in one transaction.
-   - **Already applied the earlier `after-02.sql` (through the albums/media release)?** Paste only [`supabase/bundles/after-07.sql`](supabase/bundles/after-07.sql) (jar of reasons, open-when letters, time zones). Never paste both.
+   - **Already applied the earlier `after-02.sql` (through the albums/media release)?** Paste only [`supabase/bundles/after-07.sql`](supabase/bundles/after-07.sql) (jar of reasons, open-when letters, time zones). **Already applied `after-07.sql`?** Paste only [`supabase/bundles/after-08.sql`](supabase/bundles/after-08.sql) (character clothes and the hug gesture). Never paste two bundles that overlap.
    - Regenerate the bundles with `npm run sql:bundle`.
    - The bundle also creates the private **`couple-media`** storage bucket and its policies (needs the Storage service enabled, which is the Supabase default).
 3. **Auth → URL Configuration:** set *Site URL* to your `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to *Redirect URLs* (needed for email confirmation and password reset). Open those emailed links on the same device/browser that requested them (PKCE).

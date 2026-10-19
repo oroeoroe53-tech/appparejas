@@ -5,6 +5,7 @@ const range = (n: number, prefix = "variant") => Array.from({ length: n }, (_, i
 export const CHARACTER_KEYS = [
   "head", "hair", "hairColor", "skinColor", "eyes", "eyebrows", "nose", "mouth",
   "glasses", "beard", "earrings", "freckles", "hairAccessories", "backgroundColor",
+  "top", "topColor", "scarf", "scarfColor", "hat", "hatColor",
 ] as const;
 export type CharacterKey = (typeof CHARACTER_KEYS)[number];
 export type CharacterConfig = Record<CharacterKey, string>;
@@ -23,11 +24,16 @@ export const VARIANTS = {
   beard: range(2),
   earrings: range(3),
   hairAccessories: ["flowers"],
+  top: ["tee", "hoodie", "sweater"],
+  scarf: ["plain", "striped"],
+  hat: ["beanie", "pompom", "cap"],
 } as const;
 
 export const SKIN_COLORS = ["fbe3d3", "f5d0b5", "e9b78d", "d19a6b", "a8714a", "7a4a2e", "573621", "3b2415"];
 export const HAIR_COLORS = ["1c1917", "3b2314", "6d4c41", "a0522d", "c68e4e", "e3c26b", "f5e1a4", "b5472f", "8a8a8a", "e8e8e8", "d96b9f", "4a6fd6"];
 export const BACKGROUND_COLORS = ["fde2e4", "f9d5dc", "f3d9c6", "fbeed3", "dff0d8", "d9ecf2", "e8d9f1", "e5e0da"];
+
+export const CLOTH_COLORS = ["e07a8c", "c94c4c", "f2a65a", "f4d35e", "8fbf7f", "4f9d8f", "6fa8dc", "3d5a9e", "9b7ed8", "d98fc0", "f5f0e8", "3b3b45"];
 
 export const DEFAULT_CHARACTER: CharacterConfig = {
   head: "variant01",
@@ -44,11 +50,17 @@ export const DEFAULT_CHARACTER: CharacterConfig = {
   freckles: NONE,
   hairAccessories: NONE,
   backgroundColor: "fde2e4",
+  top: "tee",
+  topColor: "e07a8c",
+  scarf: NONE,
+  scarfColor: "c94c4c",
+  hat: NONE,
+  hatColor: "3d5a9e",
 };
 
 const HEX = /^[0-9a-fA-F]{6}$/;
-const COLOR_KEYS = new Set<CharacterKey>(["hairColor", "skinColor", "backgroundColor"]);
-const OPTIONAL_KEYS = new Set<CharacterKey>(["glasses", "beard", "earrings", "freckles", "hairAccessories"]);
+const COLOR_KEYS = new Set<CharacterKey>(["hairColor", "skinColor", "backgroundColor", "topColor", "scarfColor", "hatColor"]);
+const OPTIONAL_KEYS = new Set<CharacterKey>(["glasses", "beard", "earrings", "freckles", "hairAccessories", "top", "scarf", "hat"]);
 
 export function isValidValue(key: CharacterKey, value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -91,6 +103,12 @@ export function randomCharacter(): CharacterConfig {
     freckles: Math.random() < 0.2 ? "on" : NONE,
     hairAccessories: NONE,
     backgroundColor: pick(BACKGROUND_COLORS),
+    top: pick(VARIANTS.top),
+    topColor: pick(CLOTH_COLORS),
+    scarf: maybe(VARIANTS.scarf, 0.2),
+    scarfColor: pick(CLOTH_COLORS),
+    hat: maybe(VARIANTS.hat, 0.2),
+    hatColor: pick(CLOTH_COLORS),
   };
 }
 

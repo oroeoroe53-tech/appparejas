@@ -13,14 +13,17 @@ export function CharacterFigure({
   label,
   className,
   interactive = true,
+  envelope,
 }: {
   frames: CharacterFrames;
   label: string;
   className?: string;
   interactive?: boolean;
+  /** When set, a message is waiting: they perk up and hold up an envelope. The text is read out to screen readers. */
+  envelope?: string;
 }) {
   const reduce = useReducedMotion();
-  const [frame, setFrame] = useState<keyof CharacterFrames>("neutral");
+  const [frame, setFrame] = useState<keyof CharacterFrames>(envelope ? "joy" : "neutral");
   const [hearts, setHearts] = useState<number[]>([]);
   const timers = useRef<number[]>([]);
   const joyUntil = useRef(0);
@@ -33,6 +36,14 @@ export function CharacterFigure({
     const pending = timers.current;
     return () => pending.forEach((id) => window.clearTimeout(id));
   }, []);
+
+  // A waiting message makes them light up for a moment.
+  useEffect(() => {
+    if (!envelope) return;
+    joyUntil.current = Date.now() + 2200;
+    const id = window.setTimeout(() => setFrame("neutral"), 2200);
+    return () => window.clearTimeout(id);
+  }, [envelope]);
 
   // Blink every few seconds, unless the person asked for less motion.
   useEffect(() => {
@@ -86,6 +97,21 @@ export function CharacterFigure({
           face
         )}
       </div>
+      {envelope && (
+        <motion.div
+          className="pointer-events-none absolute -bottom-1 -right-3 w-[38%]"
+          initial={reduce ? false : { y: 46, opacity: 0, rotate: -8 }}
+          animate={reduce ? undefined : { y: 0, opacity: 1, rotate: [0, -6, 4, -3, 0] }}
+          transition={{ y: { type: "spring", stiffness: 160, damping: 12, delay: 0.5 }, opacity: { delay: 0.5 }, rotate: { delay: 1, duration: 1.2, repeat: Infinity, repeatDelay: 2.5 } }}
+        >
+          <span className="sr-only" role="status">{envelope}</span>
+          <svg viewBox="0 0 64 48" aria-hidden="true" className="w-full drop-shadow-[0_6px_8px_rgb(0_0_0/0.18)]">
+            <rect x="3" y="5" width="58" height="40" rx="6" fill="#fffdf8" stroke="#9d394d" strokeWidth="2.5" />
+            <path d="M4 9l28 20 28-20" stroke="#9d394d" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
+            <path d="M32 40c-9-6-12-10-12-14 0-3 2-5 5-5 3 0 5 2 7 4 2-2 4-4 7-4 3 0 5 2 5 5 0 4-3 8-12 14z" fill="#9d394d" transform="translate(0 -2) scale(1)" />
+          </svg>
+        </motion.div>
+      )}
       <AnimatePresence>
         {hearts.map((id, i) => (
           <motion.span

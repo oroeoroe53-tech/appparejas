@@ -9,13 +9,13 @@ import { Spinner } from "@/components/ui/Spinner";
 import { t } from "@/content";
 import { renderCharacterSvg, renderFrames } from "@/lib/character";
 import {
-  BACKGROUND_COLORS, DEFAULT_CHARACTER, HAIR_COLORS, NONE, SKIN_COLORS, VARIANTS,
+  BACKGROUND_COLORS, CLOTH_COLORS, DEFAULT_CHARACTER, HAIR_COLORS, NONE, SKIN_COLORS, VARIANTS,
   randomCharacter, sanitizeCharacter, type CharacterConfig, type CharacterKey,
 } from "@/lib/character-options";
 import { cn } from "@/lib/utils";
 import { CharacterFigure } from "./CharacterFigure";
 
-const TABS = ["face", "hair", "eyes", "mouth", "extras", "background"] as const;
+const TABS = ["face", "hair", "eyes", "mouth", "clothes", "extras", "background"] as const;
 type Tab = (typeof TABS)[number];
 
 function Swatches({ label, value, colors, onPick }: { label: string; value: string; colors: string[]; onPick: (c: string) => void }) {
@@ -41,7 +41,7 @@ function Swatches({ label, value, colors, onPick }: { label: string; value: stri
 }
 
 function Variants({
-  label, field, values, config, onPick, withNone, zoom,
+  label, field, values, config, onPick, withNone, zoom, names,
 }: {
   label: string;
   field: CharacterKey;
@@ -50,6 +50,7 @@ function Variants({
   onPick: (v: string) => void;
   withNone?: boolean;
   zoom?: boolean;
+  names?: Record<string, string>;
 }) {
   // Thumbnails show the whole current character with just this one part swapped.
   const base = JSON.stringify({ ...config, [field]: undefined });
@@ -68,7 +69,7 @@ function Variants({
             type="button"
             role="radio"
             aria-checked={config[field] === v}
-            aria-label={v === NONE ? `${label}: ${t.character.none}` : t.character.option(label, i + (withNone ? 0 : 1))}
+            aria-label={v === NONE ? `${label}: ${t.character.none}` : (names?.[v] ?? t.character.option(label, i + (withNone ? 0 : 1)))}
             onClick={() => onPick(v)}
             className={cn(
               "relative grid aspect-square place-items-center overflow-hidden rounded-2xl bg-paper text-xs text-muted shadow-soft transition active:scale-95",
@@ -167,6 +168,16 @@ export function CharacterCreator({ initial, partnerName }: { initial: unknown; p
           <>
             <Variants {...props} label={t.character.groups.mouth} field="mouth" values={VARIANTS.mouth} onPick={(v) => set("mouth", v)} zoom />
             <Variants {...props} label={t.character.groups.nose} field="nose" values={VARIANTS.nose} onPick={(v) => set("nose", v)} zoom />
+          </>
+        )}
+        {tab === "clothes" && (
+          <>
+            <Variants {...props} label={t.character.groups.top} field="top" values={VARIANTS.top} onPick={(v) => set("top", v)} withNone names={t.character.tops} />
+            {config.top !== NONE && <Swatches label={t.character.groups.topColor} value={config.topColor} colors={CLOTH_COLORS} onPick={(c) => set("topColor", c)} />}
+            <Variants {...props} label={t.character.groups.scarf} field="scarf" values={VARIANTS.scarf} onPick={(v) => set("scarf", v)} withNone names={t.character.scarves} />
+            {config.scarf !== NONE && <Swatches label={t.character.groups.scarfColor} value={config.scarfColor} colors={CLOTH_COLORS} onPick={(c) => set("scarfColor", c)} />}
+            <Variants {...props} label={t.character.groups.hat} field="hat" values={VARIANTS.hat} onPick={(v) => set("hat", v)} withNone names={t.character.hats} />
+            {config.hat !== NONE && <Swatches label={t.character.groups.hatColor} value={config.hatColor} colors={CLOTH_COLORS} onPick={(c) => set("hatColor", c)} />}
           </>
         )}
         {tab === "extras" && (

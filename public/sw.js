@@ -72,6 +72,7 @@ self.addEventListener("push", (event) => {
     badge: data.badge || "/icons/badge-96.png",
     tag: data.tag || undefined, // same tag => the OS replaces rather than duplicates
     image: typeof data.image === "string" && data.image.startsWith("https://") ? data.image : undefined,
+    vibrate: Array.isArray(data.vibrate) ? data.vibrate.filter((n) => typeof n === "number" && n >= 0 && n <= 1000).slice(0, 9) : undefined,
     data: { url: typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/home" },
   };
   event.waitUntil(

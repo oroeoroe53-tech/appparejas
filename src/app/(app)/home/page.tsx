@@ -9,6 +9,7 @@ import { signedUrls } from "@/server/media";
 import { MoodPicker } from "@/components/character/MoodPicker";
 import { CharacterStage, freshMood } from "@/components/home/CharacterStage";
 import { InlineMessages } from "@/components/home/InlineMessages";
+import { HugButton } from "@/components/home/HugButton";
 import { PingButton, QuickSend } from "@/components/home/QuickSend";
 import { isCeremony } from "@/lib/message-types";
 import { SealedLetter } from "@/components/home/SealedLetter";
@@ -70,19 +71,23 @@ export default async function HomePage() {
         togetherSince={ctx.space.togetherSince}
         nowMs={now.getTime()}
         partnerTimezone={ctx.space.partner?.timezone ?? null}
+        unread={unread.length}
       />
 
       {!ended && (
         <div className="mt-6 space-y-3">
           <QuickSend partnerName={partnerName} />
-          <PingButton partnerName={partnerName} />
+          <div className="flex flex-wrap items-start justify-center gap-x-3">
+            <PingButton partnerName={partnerName} />
+            <HugButton partnerName={partnerName} them={characters.mine} me={characters.theirs} />
+          </div>
           <ButtonLink href="/write" variant="secondary" className="w-full">{hasLetters || first ? t.home.writeLetter : t.home.emptyCta}</ButtonLink>
         </div>
       )}
 
       {ended && <p role="status" className="mt-6 rounded-2xl bg-rose-soft px-4 py-3 text-sm text-cherry-deep">{t.home.endedBanner}</p>}
 
-      <InlineMessages items={plainUnread.map((m) => ({ id: m.id, type: m.message_type, content: m.content, createdAt: m.created_at, media: m.attachment_path && mediaUrls[m.attachment_path] ? { url: mediaUrls[m.attachment_path] as string, seconds: m.attachment_seconds } : undefined }))} senderName={partnerName} />
+      <InlineMessages items={plainUnread.map((m) => ({ id: m.id, type: m.message_type, content: m.content, createdAt: m.created_at, media: m.attachment_path && mediaUrls[m.attachment_path] ? { url: mediaUrls[m.attachment_path] as string, seconds: m.attachment_seconds } : undefined }))} senderName={partnerName} hug={{ them: characters.mine, me: characters.theirs }} />
 
       <section className="mt-8" aria-label={t.home.waitingForYou}>
         {first ? (

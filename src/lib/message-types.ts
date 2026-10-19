@@ -1,6 +1,6 @@
 export const MESSAGE_TYPES = [
   "quick", "love_letter", "little_note", "heart_message", "hug_in_words", "secret_message", "old_letter",
-  "thinking_of_you", "voice_note", "drawing",
+  "thinking_of_you", "voice_note", "drawing", "hug",
 ] as const;
 export type MessageType = (typeof MESSAGE_TYPES)[number];
 
@@ -15,6 +15,7 @@ export const isCeremony = (type: MessageType) => CEREMONY.includes(type);
 /** Keep in sync with public.send_message in the SQL migration. */
 export const MESSAGE_LIMITS: Record<MessageType, number> = {
   thinking_of_you: 100,
+  hug: 100,
   little_note: 280,
   voice_note: 300,
   drawing: 300,

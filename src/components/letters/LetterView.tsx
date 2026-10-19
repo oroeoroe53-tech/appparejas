@@ -27,9 +27,10 @@ interface Props {
   partnerName: string;
   song: SongClip | null;
   media: { url: string; seconds: number | null } | null;
+  hug?: { them: unknown; me: unknown };
 }
 
-export function LetterView({ id, type, text, createdAt, readAt, reaction: initialReaction, isRecipient, senderName, partnerName, song, media }: Props) {
+export function LetterView({ id, type, text, createdAt, readAt, reaction: initialReaction, isRecipient, senderName, partnerName, song, media, hug }: Props) {
   const songPlayer = useRef<SongPlayerHandle>(null);
   const songStarted = useRef(false);
   const alreadyRead = readAt !== null;
@@ -78,6 +79,7 @@ export function LetterView({ id, type, text, createdAt, readAt, reaction: initia
           senderName={senderName}
           dateLabel={formatDateTime(createdAt)}
           media={media ?? undefined}
+          hug={hug}
           autoOpen={skipCeremony}
           onOpened={isRecipient ? handleOpened : undefined}
           // The tap that opens the seal is the moment browsers allow sound to start.

@@ -16,6 +16,8 @@ export interface ExperienceProps {
   onOpenStart?: () => void;
   /** Signed link and length of a voice note or drawing. */
   media?: { url: string; seconds: number | null };
+  /** Both characters (as drawn by each of you), for the hug scene. */
+  hug?: { them: unknown; me: unknown };
 }
 
 export const EASE = [0.22, 1, 0.36, 1] as const;

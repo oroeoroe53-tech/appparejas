@@ -4,7 +4,7 @@ import { LocalClock } from "./LocalClock";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
 import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
-import { renderFrames } from "@/lib/character";
+import { renderFrames, sceneAt } from "@/lib/character";
 import { isMood, type Mood } from "@/lib/character-options";
 import { daysTogether, timeAgoParts } from "@/lib/utils";
 import type { MoodRow } from "@/server/queries";
@@ -29,6 +29,7 @@ export function CharacterStage({
   togetherSince,
   nowMs,
   partnerTimezone,
+  unread = 0,
 }: {
   partnerName: string;
   partnerConfig: unknown | null;
@@ -36,8 +37,11 @@ export function CharacterStage({
   togetherSince: string | null;
   nowMs: number;
   partnerTimezone?: string | null;
+  /** Messages from them that you have not read yet. */
+  unread?: number;
 }) {
   const theirMood = freshMood(partnerMood, nowMs);
+  const scene = sceneAt(nowMs, partnerTimezone);
   const days = togetherSince ? daysTogether(togetherSince, new Date(nowMs)) : null;
 
   return (
@@ -49,7 +53,7 @@ export function CharacterStage({
         )}
         {partnerConfig ? (
           <>
-            <CharacterFigure frames={renderFrames(partnerConfig, theirMood ?? "neutral")} label={t.character.previewAlt(partnerName)} className="mx-auto h-40 w-40" />
+            <CharacterFigure frames={renderFrames(partnerConfig, theirMood ?? "neutral", scene)} label={`${t.character.previewAlt(partnerName)}. ${scene === "night" ? t.character.asleep(partnerName) : t.character.sunny(partnerName)}`} envelope={unread > 0 ? t.character.envelope(partnerName) : undefined} className="mx-auto h-40 w-40" />
             <p className="mt-4 font-serif text-2xl">{partnerName}</p>
             <p className="mt-1 text-sm text-muted">
               {theirMood && partnerMood ? t.mood.feels(partnerName, t.mood.labels[theirMood], agoLabel(partnerMood.updated_at, nowMs)) : t.mood.quiet(partnerName)}

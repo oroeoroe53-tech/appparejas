@@ -16,7 +16,7 @@ export interface InlineItem {
 }
 
 /** Unread messages that need no ceremony, shown right on Home and marked read once they have been on screen. */
-export function InlineMessages({ items, senderName }: { items: InlineItem[]; senderName: string }) {
+export function InlineMessages({ items, senderName, hug }: { items: InlineItem[]; senderName: string; hug?: { them: unknown; me: unknown } }) {
   // Keep what arrived with this visit even after the server re-renders without the now-read ones.
   const [initial] = useState(items);
   if (initial.length === 0) return null;
@@ -31,6 +31,7 @@ export function InlineMessages({ items, senderName }: { items: InlineItem[]; sen
           senderName={senderName}
           dateLabel={formatDateTime(m.createdAt)}
           media={m.media}
+          hug={hug}
           onOpened={() => void markReadAction(m.id)}
         />
       ))}

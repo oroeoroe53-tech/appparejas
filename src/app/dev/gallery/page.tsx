@@ -13,7 +13,7 @@ export default function Gallery() {
       {MESSAGE_TYPES.map((type) => (
         <section key={type} data-type={type}>
           <h2 className="mb-4 text-xs tracking-widest text-muted uppercase">{t.types[type].name}</h2>
-          <MessageExperience type={type} text={sample} senderName="Sample" dateLabel="Mon, 19 Oct · 09:41" />
+          <MessageExperience type={type} text={sample} senderName="Sample" dateLabel="Mon, 19 Oct · 09:41" hug={{ them: { top: "hoodie", topColor: "6fa8dc", hair: "variant30", hat: "pompom", hatColor: "d98fc0" }, me: { top: "sweater", topColor: "f2a65a", scarf: "striped", skinColor: "a8714a", backgroundColor: "d9ecf2" } }} />
         </section>
       ))}
       <section data-type="song">

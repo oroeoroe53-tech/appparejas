@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BookHeart, CalendarHeart, Images, ListChecks, MailOpen, MessageCircleQuestion, Music2, Sparkles, Ticket } from "lucide-react";
+import { BookHeart, BookOpen, CalendarHeart, Images, ListChecks, MailOpen, MessageCircleQuestion, Music2, Sparkles, Ticket } from "lucide-react";
 import Link from "next/link";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -78,6 +78,7 @@ export default async function UsPage() {
           )}
         </HubTile>
         <HubTile href="/us/story" title={t.us.sections.story} preview={t.hub.story(summary.story, summary.latestStory)} Icon={BookHeart} accent="sand" />
+        <HubTile href="/us/book" title={t.hub.book} preview={t.book.hubPreview} Icon={BookOpen} accent="rose" wide />
         <HubTile href="/us/playlist" title={t.us.sections.playlist} preview={t.hub.playlist(summary.playlist, summary.latestSong ? `${summary.latestSong.title} · ${summary.latestSong.artist}` : null)} Icon={Music2} accent="lavender" wide />
       </Group>
 

@@ -5,6 +5,7 @@ import { HeartMessage } from "./HeartMessage";
 import { HugInWords } from "./HugInWords";
 import { LittleNote } from "./LittleNote";
 import { DrawingCard } from "./DrawingCard";
+import { HugExperience } from "./HugExperience";
 import { LoveLetter } from "./LoveLetter";
 import { OldLetter } from "./OldLetter";
 import { QuickMessage } from "./QuickMessage";
@@ -22,6 +23,7 @@ const EXPERIENCES: Record<MessageType, (props: ExperienceProps) => React.ReactEl
   old_letter: OldLetter,
   quick: QuickMessage,
   thinking_of_you: ThinkingOfYou,
+  hug: HugExperience,
   voice_note: VoiceNote,
   drawing: DrawingCard,
 };

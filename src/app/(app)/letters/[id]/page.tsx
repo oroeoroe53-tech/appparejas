@@ -4,7 +4,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
-import { getLetter, partnerLabel } from "@/server/queries";
+import { getCharacters, getLetter, partnerLabel } from "@/server/queries";
 import type { SongClip } from "@/lib/songs";
 import { signedUrls } from "@/server/media";
 
@@ -28,6 +28,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
 
   const isRecipient = letter.recipient_id === ctx.user.id;
   const mediaUrl = letter.attachment_path ? (await signedUrls([letter.attachment_path]))[letter.attachment_path] : undefined;
+  const hug = letter.message_type === "hug" ? await getCharacters(ctx.user.id) : null;
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const song: SongClip | null =
     letter.song_track_id && letter.song_title && letter.song_artist && letter.song_preview_url && letter.song_start !== null && letter.song_duration !== null
@@ -54,6 +55,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
         senderName={isRecipient ? partnerName : ctx.profile.display_name}
         partnerName={partnerName}
         song={song}
+        hug={hug ? { them: hug.mine, me: hug.theirs } : undefined}
         media={mediaUrl ? { url: mediaUrl, seconds: letter.attachment_seconds } : null}
       />
     </div>
