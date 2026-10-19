@@ -11,7 +11,7 @@ export function DrawingCard(props: ExperienceProps) {
   const { text, senderName, dateLabel, media } = props;
   const { notify, after } = useReveal({ ...props, autoOpen: true, deferNotify: true });
   useEffect(() => after(1200, notify), [after, notify]);
-  const caption = text.trim() === "Drawing" ? "" : text;
+  const caption = [t.meta.drawingCaption, "Drawing"].includes(text.trim()) ? "" : text;
 
   return (
     <div className="py-4">

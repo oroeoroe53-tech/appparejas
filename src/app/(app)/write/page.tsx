@@ -6,7 +6,7 @@ import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
 import { partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Write" };
+export const metadata: Metadata = { title: t.meta.titles.write };
 export const dynamic = "force-dynamic";
 
 export default async function WritePage({ searchParams }: { searchParams: Promise<{ reply?: string }> }) {

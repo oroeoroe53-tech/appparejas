@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { brand } from "@/config/brand";
-import { t } from "@/content";
+import { t, LOCALE } from "@/content";
 import { MotionProvider } from "@/components/MotionProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
@@ -29,7 +29,7 @@ const themeScript = `try{var m=localStorage.getItem("us-theme");if(m==="light"||
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={LOCALE} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

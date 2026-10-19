@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { t } from "@/content";
 import { getAppContext, getOpenInvitationExpiry } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Invite your person" };
+export const metadata: Metadata = { title: t.meta.titles.connect };
 export const dynamic = "force-dynamic";
 
 export default async function ConnectPage() {

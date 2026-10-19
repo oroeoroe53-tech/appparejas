@@ -9,7 +9,7 @@ import { cn, formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getCoupons, partnerLabel, type CouponRow } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Love coupons" };
+export const metadata: Metadata = { title: t.meta.titles.coupons };
 export const dynamic = "force-dynamic";
 
 function Ticket({ coupon, caption, children }: { coupon: CouponRow; caption: string; children?: React.ReactNode }) {

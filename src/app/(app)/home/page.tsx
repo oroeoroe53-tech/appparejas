@@ -21,7 +21,7 @@ import { redirect } from "next/navigation";
 import { requireSpace } from "@/server/guards";
 import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getReasons, getUnreadLetters, getUser, partnerAnswered, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "For you" };
+export const metadata: Metadata = { title: t.meta.titles.home };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {

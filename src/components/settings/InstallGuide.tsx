@@ -46,7 +46,7 @@ export function InstallGuide() {
   return (
     <div className="space-y-6">
       {detected && <p className="text-sm text-muted">{i.detected(i.platforms[detected])}</p>}
-      <div role="tablist" aria-label="Platform" className="flex gap-2">
+      <div role="tablist" aria-label={t.install.platformLabel} className="flex gap-2">
         {(Object.keys(i.platforms) as Platform[]).map((p) => (
           <button
             key={p}

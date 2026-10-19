@@ -9,7 +9,7 @@ import { formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getOpenWhen, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Open when…" };
+export const metadata: Metadata = { title: t.meta.titles.openWhen };
 export const dynamic = "force-dynamic";
 
 export default async function OpenWhenPage() {

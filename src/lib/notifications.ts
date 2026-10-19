@@ -75,7 +75,7 @@ export function buildTestPayload(): PushPayload {
   return {
     ...ICONS,
     title: brand.name,
-    body: "This is a test. Notifications are working on this device.",
+    body: t.meta.testPush,
     tag: "test-notification",
     url: "/settings",
   };

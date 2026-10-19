@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import { getLetters, getUser, partnerLabel, type LetterFilter } from "@/server/queries";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Our letters" };
+export const metadata: Metadata = { title: t.meta.titles.letters };
 export const dynamic = "force-dynamic";
 
 const PAGE = 30;

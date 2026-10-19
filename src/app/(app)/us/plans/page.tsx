@@ -11,7 +11,7 @@ import { formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getEvents } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Plans" };
+export const metadata: Metadata = { title: t.meta.titles.plans };
 export const dynamic = "force-dynamic";
 
 export default async function PlansPage() {

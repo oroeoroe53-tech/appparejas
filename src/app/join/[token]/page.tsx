@@ -8,7 +8,7 @@ import { parseInviteToken } from "@/lib/invite";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Join", robots: { index: false } };
+export const metadata: Metadata = { title: t.meta.titles.join, robots: { index: false } };
 
 export default async function JoinPage({ params }: { params: Promise<{ token: string }> }) {
   const token = parseInviteToken((await params).token);

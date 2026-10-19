@@ -9,7 +9,7 @@ import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
 import { getPlaylist, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Our playlist" };
+export const metadata: Metadata = { title: t.meta.titles.playlist };
 export const dynamic = "force-dynamic";
 
 export default async function PlaylistPage() {

@@ -17,7 +17,7 @@ export function VoiceNote(props: ExperienceProps) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [failed, setFailed] = useState(false);
-  const caption = text.trim() === "Voice note" ? "" : text;
+  const caption = [t.meta.voiceCaption, "Voice note"].includes(text.trim()) ? "" : text;
 
   async function toggle() {
     const a = audio.current;

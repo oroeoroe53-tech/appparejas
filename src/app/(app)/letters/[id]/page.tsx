@@ -8,7 +8,7 @@ import { getLetter, partnerLabel } from "@/server/queries";
 import type { SongClip } from "@/lib/songs";
 import { signedUrls } from "@/server/media";
 
-export const metadata: Metadata = { title: "Letter", robots: { index: false } };
+export const metadata: Metadata = { title: t.meta.titles.letter, robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function LetterPage({ params }: { params: Promise<{ id: string }> }) {

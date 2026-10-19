@@ -1,5 +1,8 @@
 import { en } from "./en";
+import { es } from "./es";
+import { LOCALE } from "./locale";
 
-/** Active locale. Swap for another catalogue with the same shape to translate the app. */
-export const t = en;
+/** Active catalogue. Both languages share one shape, so a missing string is a type error. */
+export const t = LOCALE === "en" ? en : es;
 export type { Copy } from "./en";
+export { LOCALE };

@@ -1,5 +1,7 @@
+import { LOCALE } from "./locale";
+
 /** A gentle question for every day. Both of you see the same one; answers stay hidden until you have both replied. */
-export const QUESTIONS: readonly string[] = [
+export const QUESTIONS_EN: readonly string[] = [
   "What is a small thing I do that makes your day better?",
   "What was the first thing you noticed about me?",
   "Which memory of us makes you smile the most?",
@@ -61,6 +63,71 @@ export const QUESTIONS: readonly string[] = [
   "What is a rule of our relationship that you love?",
   "What is one word that describes how you feel about us today?",
 ];
+
+export const QUESTIONS_ES: readonly string[] = [
+  "¿Qué pequeña cosa que hago te mejora el día?",
+  "¿Qué fue lo primero que notaste de mí?",
+  "¿Qué recuerdo nuestro te saca más sonrisas?",
+  "Si pudiéramos teletransportarnos esta noche, ¿dónde cenaríamos?",
+  "¿Qué canción te recuerda a nosotros?",
+  "¿Qué has querido siempre probar juntos?",
+  "¿Cuándo te sientes más querido o querida por mí?",
+  "¿Cuál es tu forma favorita de pasar un domingo tranquilo conmigo?",
+  "¿Qué es algo de lo que te sientas orgulloso u orgullosa esta semana?",
+  "¿Con qué soñaste anoche, si te acuerdas?",
+  "¿Qué pequeña manía mía te encanta en secreto?",
+  "¿Cómo sería nuestra mañana perfecta?",
+  "¿Qué viaje conmigo repetirías sin pensarlo?",
+  "¿Qué te gustaría que te preguntara más a menudo?",
+  "Si pudieras ponernos un apodo como pareja, ¿cuál sería?",
+  "¿Qué miedo te gustaría que yo conociera?",
+  "¿Qué es lo más amable que alguien ha hecho por ti últimamente?",
+  "¿Qué comida cocinarías para mí en una noche especial?",
+  "¿Qué meta te gustaría que alcanzáramos este año?",
+  "¿Qué te hace reír más cuando estamos juntos?",
+  "¿Qué te gustaría que hiciéramos más a menudo?",
+  "¿Cuándo te diste cuenta de que esto era algo especial?",
+  "¿Cuál es tu foto favorita de nosotros y por qué?",
+  "¿Qué película volverías a ver conmigo cien veces?",
+  "¿Cómo se siente para ti el hogar?",
+  "¿Qué has aprendido de mí?",
+  "¿Cuál de mis rarezas te parece más encantadora?",
+  "Si tuviéramos un fin de semana libre sin planes, ¿qué elegirías?",
+  "¿Cuál es un sueño que nunca le has contado a nadie?",
+  "¿Cuál es el mejor consejo que te han dado?",
+  "¿Qué te gustaría que siguiéramos haciendo juntos dentro de diez años?",
+  "¿Qué lugar quieres enseñarme?",
+  "¿Cuál de nuestros chistes internos es tu favorito?",
+  "¿Qué necesitas más ahora mismo?",
+  "¿Qué cumplido no te cansas de oír?",
+  "¿Cuál es tu comida reconfortante y quién debería traértela?",
+  "¿Cuándo fue la última vez que te sentiste muy orgulloso u orgullosa de nosotros?",
+  "¿Qué pequeña cosa haría genial el día de mañana?",
+  "¿Qué es lo que más te gusta de nuestra rutina?",
+  "¿Qué riesgo correrías conmigo a tu lado?",
+  "¿Qué estación nos va mejor y por qué?",
+  "¿Cuál es el mensaje más dulce que te he enviado?",
+  "¿Qué admiras más de cómo llevo los días difíciles?",
+  "¿Qué habilidad te encantaría aprender juntos?",
+  "¿Qué crees que hacemos muy bien como pareja?",
+  "¿Qué cambiarías de esta semana?",
+  "¿Qué escribirías en una postal al día en que nos conocimos?",
+  "¿Cuál es tu sonido favorito del mundo?",
+  "¿Qué tradición te gustaría que empezáramos?",
+  "¿Qué podría hacer para ayudarte a relajarte esta noche?",
+  "¿Qué recuerdo de tu infancia desearías que hubiera vivido contigo?",
+  "¿Qué superpoder elegirías para nosotros?",
+  "¿Qué es lo más espontáneo que harías conmigo?",
+  "¿Qué es lo que más agradeces hoy?",
+  "¿Qué te gustaría agradecerme?",
+  "¿Dónde nos imaginas viviendo en el futuro?",
+  "¿Qué olor, canción o lugar te hace pensar en mí al instante?",
+  "¿Qué película, libro o serie quieres que compartamos?",
+  "¿Qué norma de nuestra relación te encanta?",
+  "¿Qué palabra describe cómo te sientes hoy con nosotros?",
+];
+
+export const QUESTIONS: readonly string[] = LOCALE === "en" ? QUESTIONS_EN : QUESTIONS_ES;
 
 const EPOCH_DAY = 19723; // 2024-01-01 in days since 1970
 

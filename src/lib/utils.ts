@@ -1,3 +1,5 @@
+import { LOCALE } from "@/content/locale";
+
 export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -12,10 +14,10 @@ export function truncate(text: string, max: number): string {
   return chars.length <= max ? chars.join("") : `${chars.slice(0, max - 1).join("").trimEnd()}…`;
 }
 
-const dateFmt = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" });
-const dayFmt = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" });
-const timeFmt = new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit" });
-const monthFmt = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+const dayFmt = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", year: "numeric" });
+const timeFmt = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" });
+const monthFmt = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" });
 
 export const formatToday = (d = new Date()) => dateFmt.format(d);
 export const formatDay = (iso: string) => dayFmt.format(new Date(iso));

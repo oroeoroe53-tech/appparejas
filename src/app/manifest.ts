@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { t } from "@/content";
 import { brand } from "@/config/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
@@ -14,9 +15,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#FAF7F2",
     theme_color: "#FAF7F2",
     shortcuts: [
-      { name: "Write to your person", short_name: "Write", url: "/write", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "See your person", short_name: "Portrait", url: "/us/portrait", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Our letters", short_name: "Letters", url: "/letters", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: t.meta.shortcuts.write.name, short_name: t.meta.shortcuts.write.short, url: "/write", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: t.meta.shortcuts.portrait.name, short_name: t.meta.shortcuts.portrait.short, url: "/us/portrait", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: t.meta.shortcuts.letters.name, short_name: t.meta.shortcuts.letters.short, url: "/letters", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
     categories: ["lifestyle", "social"],
     icons: [

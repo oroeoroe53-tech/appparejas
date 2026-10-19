@@ -46,7 +46,7 @@ describe("upcoming", () => {
   });
 });
 
-import { QUESTIONS, questionForDay } from "@/content/questions";
+import { QUESTIONS, QUESTIONS_EN, QUESTIONS_ES, questionForDay } from "@/content/questions";
 describe("questionForDay", () => {
   it("is stable within a day, changes daily, and wraps around", () => {
     const d = toDayNumber("2026-10-19");
@@ -54,6 +54,9 @@ describe("questionForDay", () => {
     expect(questionForDay(d)).not.toBe(questionForDay(d + 1));
     expect(questionForDay(d + QUESTIONS.length)).toBe(questionForDay(d));
     expect(questionForDay(toDayNumber("1999-01-01"))).toBeTruthy();
+  });
+  it("keeps both languages the same length", () => {
+    expect(QUESTIONS_ES.length).toBe(QUESTIONS_EN.length);
   });
   it("has no duplicate questions", () => {
     expect(new Set(QUESTIONS).size).toBe(QUESTIONS.length);

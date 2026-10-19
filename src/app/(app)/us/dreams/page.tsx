@@ -9,7 +9,7 @@ import { formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getDreams } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Dreams" };
+export const metadata: Metadata = { title: t.meta.titles.dreams };
 export const dynamic = "force-dynamic";
 
 export default async function DreamsPage() {

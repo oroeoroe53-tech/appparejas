@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/forms";
 import { t } from "@/content";
 import { safeNext } from "@/lib/safe-next";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = { title: t.meta.titles.login };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams;

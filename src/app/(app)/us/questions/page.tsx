@@ -9,7 +9,7 @@ import { formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getAnswers, partnerAnswered, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Daily question" };
+export const metadata: Metadata = { title: t.meta.titles.questions };
 export const dynamic = "force-dynamic";
 
 export default async function QuestionsPage() {

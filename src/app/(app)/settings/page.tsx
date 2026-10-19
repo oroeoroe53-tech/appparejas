@@ -11,7 +11,7 @@ import { t } from "@/content";
 import { getAppContext, partnerLabel } from "@/server/queries";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = { title: t.meta.titles.settings };
 export const dynamic = "force-dynamic";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

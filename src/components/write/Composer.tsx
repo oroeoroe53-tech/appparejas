@@ -151,7 +151,7 @@ function ComposerEditor({ senderName, partnerName, isReply, minDate, onSent }: C
   const stepIndex = STEPS.indexOf(step);
   return (
     <div>
-      <ol className="mb-6 flex items-center gap-2 text-xs" aria-label="Progress">
+      <ol className="mb-6 flex items-center gap-2 text-xs" aria-label={t.write.progress}>
         {STEPS.map((s, i) => (
           <li key={s} aria-current={i === stepIndex ? "step" : undefined} className="flex items-center gap-2">
             <span className={cn("grid h-6 w-6 place-items-center rounded-full text-[11px]", i < stepIndex ? "bg-cherry text-on-cherry" : i === stepIndex ? "border border-cherry text-cherry" : "border border-line text-muted")}>

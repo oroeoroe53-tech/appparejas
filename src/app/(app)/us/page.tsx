@@ -15,7 +15,7 @@ import { signedUrls } from "@/server/media";
 import { redirect } from "next/navigation";
 import { getCharacters, getEvents, getHubSummary, getUser, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Us" };
+export const metadata: Metadata = { title: t.meta.titles.us };
 export const dynamic = "force-dynamic";
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {

@@ -11,7 +11,7 @@ import { requireSpace } from "@/server/guards";
 import { signedUrls } from "@/server/media";
 import { getStory } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Our story" };
+export const metadata: Metadata = { title: t.meta.titles.story };
 export const dynamic = "force-dynamic";
 
 export default async function StoryPage() {

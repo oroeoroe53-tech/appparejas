@@ -8,7 +8,7 @@ import { renderFrames } from "@/lib/character";
 import { requireSpace } from "@/server/guards";
 import { getCharacters, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Your character" };
+export const metadata: Metadata = { title: t.meta.titles.character };
 export const dynamic = "force-dynamic";
 
 export default async function CharacterPage() {

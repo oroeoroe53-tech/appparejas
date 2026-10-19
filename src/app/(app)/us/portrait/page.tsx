@@ -13,7 +13,7 @@ import { daysTogether } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { getCharacters, getMoods, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Your person" };
+export const metadata: Metadata = { title: t.meta.titles.portrait };
 export const dynamic = "force-dynamic";
 
 /** A calm, full-screen portrait of your person: big, alive, with a way to say something right here. */

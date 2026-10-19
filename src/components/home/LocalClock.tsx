@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { t } from "@/content";
+import { t, LOCALE } from "@/content";
 
 function subscribe(callback: () => void) {
   const id = window.setInterval(callback, 20_000);
@@ -14,7 +14,7 @@ export function LocalClock({ timezone, name, className }: { timezone: string; na
     subscribe,
     () => {
       try {
-        return new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: timezone }).format(new Date());
+        return new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: timezone }).format(new Date());
       } catch {
         return "";
       }

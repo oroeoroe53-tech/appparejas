@@ -11,7 +11,7 @@ import { requireSpace } from "@/server/guards";
 import { signedUrls } from "@/server/media";
 import { getAlbum, getPhotos } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Album" };
+export const metadata: Metadata = { title: t.meta.titles.album };
 export const dynamic = "force-dynamic";
 
 export default async function AlbumPage({ params }: { params: Promise<{ id: string }> }) {

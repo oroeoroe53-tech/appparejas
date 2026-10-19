@@ -3,7 +3,7 @@ import { Logo } from "@/components/ui/Logo";
 import { RetryButton } from "@/components/RetryButton";
 import { t } from "@/content";
 
-export const metadata: Metadata = { title: "Offline" };
+export const metadata: Metadata = { title: t.meta.titles.offline };
 
 export default function OfflinePage() {
   return (

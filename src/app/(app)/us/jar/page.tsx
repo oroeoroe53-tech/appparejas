@@ -8,7 +8,7 @@ import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
 import { getReasons, partnerLabel } from "@/server/queries";
 
-export const metadata: Metadata = { title: "Jar of reasons" };
+export const metadata: Metadata = { title: t.meta.titles.jar };
 export const dynamic = "force-dynamic";
 
 export default async function JarPage() {

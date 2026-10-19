@@ -5,7 +5,7 @@ import { RegisterForm } from "@/components/auth/forms";
 import { t } from "@/content";
 import { safeNext } from "@/lib/safe-next";
 
-export const metadata: Metadata = { title: "Create account" };
+export const metadata: Metadata = { title: t.meta.titles.register };
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const dest = safeNext((await searchParams).next);

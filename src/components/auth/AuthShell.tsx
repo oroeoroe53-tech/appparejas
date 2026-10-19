@@ -1,10 +1,11 @@
+import { t } from "@/content";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle: string; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
     <main id="main" className="safe-top safe-bottom mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-8">
-      <Link href="/welcome" aria-label="Home" className="self-start">
+      <Link href="/welcome" aria-label={t.meta.homeLink} className="self-start">
         <Logo />
       </Link>
       <div className="flex flex-1 flex-col justify-center py-10">

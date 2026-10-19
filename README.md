@@ -87,6 +87,7 @@ Without Supabase variables the app still builds and starts, and redirects to a `
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | Supabase anon/publishable key (safe in the browser; RLS protects data) |
 | `NEXT_PUBLIC_SITE_URL` | public | Origin used for invitation links and auth redirects, no trailing slash |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | public | VAPID public key |
+| `NEXT_PUBLIC_LOCALE` | public, optional | `es` (default) or `en`: language of the whole app. Supabase auth emails keep their own language; edit them in the dashboard. |
 | `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Reads push subscriptions / recipient preferences, deletes accounts |
 | `VAPID_PRIVATE_KEY` | **server only** | Signs push requests |
 | `VAPID_SUBJECT` | server | `mailto:` or `https:` contact for push services |

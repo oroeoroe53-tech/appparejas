@@ -67,7 +67,7 @@ self.addEventListener("push", (event) => {
   }
   const title = typeof data.title === "string" && data.title ? data.title : "US";
   const options = {
-    body: typeof data.body === "string" ? data.body : "You have something waiting.",
+    body: typeof data.body === "string" ? data.body : (String(self.navigator.language).startsWith("en") ? "You have something waiting." : "Tienes algo esperándote."),
     icon: data.icon || "/icons/icon-192.png",
     badge: data.badge || "/icons/badge-96.png",
     tag: data.tag || undefined, // same tag => the OS replaces rather than duplicates
