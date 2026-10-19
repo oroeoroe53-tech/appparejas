@@ -14,7 +14,7 @@ import { SongPicker } from "@/components/songs/SongPicker";
 import { SongPlayer, type SongPlayerHandle } from "@/components/songs/SongPlayer";
 import { isAppleArtworkUrl, isApplePreviewUrl, type SongClip } from "@/lib/songs";
 import { t } from "@/content";
-import { isMessageType, MESSAGE_LIMITS, MESSAGE_TYPES, type MessageType } from "@/lib/message-types";
+import { isLetterStyle, LETTER_STYLES, MESSAGE_LIMITS, type LetterStyle } from "@/lib/message-types";
 import { useIsClient, useOnline } from "@/lib/use-client";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ const DRAFT_KEY = "us-draft-v1";
 
 interface Draft {
   text: string;
-  type: MessageType;
+  type: LetterStyle;
   clientId: string;
   song: SongClip | null;
 }
@@ -45,7 +45,7 @@ function loadDraft(): Draft | null {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Draft>;
-    if (typeof parsed.text !== "string" || !isMessageType(parsed.type) || typeof parsed.clientId !== "string") return null;
+    if (typeof parsed.text !== "string" || !isLetterStyle(parsed.type) || typeof parsed.clientId !== "string") return null;
     return { text: parsed.text, type: parsed.type, clientId: parsed.clientId, song: validSong(parsed.song) };
   } catch {
     return null;
@@ -80,7 +80,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
   const [draft] = useState(loadDraft);
   const [step, setStep] = useState<Step>("write");
   const [text, setText] = useState(draft?.text ?? "");
-  const [type, setType] = useState<MessageType>(draft?.type ?? "love_letter");
+  const [type, setType] = useState<LetterStyle>(draft?.type ?? "love_letter");
   const [clientId, setClientId] = useState<string>(() => draft?.clientId ?? newId());
   const [song, setSong] = useState<SongClip | null>(draft?.song ?? null);
   const songPlayer = useRef<SongPlayerHandle>(null);
@@ -222,7 +222,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
               <h2 className="font-serif text-2xl">{t.write.chooseStyle}</h2>
               <p className="mt-1.5 text-[15px] text-muted">{t.write.chooseStyleHint}</p>
               <div role="radiogroup" aria-label={t.write.chooseStyle} className="mt-5 space-y-3">
-                {MESSAGE_TYPES.map((m) => {
+                {LETTER_STYLES.map((m) => {
                   const fits = length <= MESSAGE_LIMITS[m];
                   const selected = type === m;
                   return (

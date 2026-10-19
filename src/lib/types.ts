@@ -36,6 +36,10 @@ export interface Message {
   song_artwork_url: string | null;
   song_start: number | null;
   song_duration: number | null;
+  attachment_path: string | null;
+  attachment_seconds: number | null;
+  deliver_at: string | null;
+  sort_at: string;
 }
 
 export interface SpaceContext {

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isCeremony } from "@/lib/message-types";
 import type { Message, Preferences, Profile, SpaceContext } from "@/lib/types";
 
 export const getUser = cache(async () => {
@@ -16,7 +17,7 @@ export interface AppContext {
   space: SpaceContext | null;
 }
 
-const DEFAULT_PREFS: Preferences = { notifications_enabled: true, notification_preview_mode: "generic", theme: "system" };
+const DEFAULT_PREFS: Preferences = { notifications_enabled: true, notification_preview_mode: "full", theme: "system" };
 
 export const getAppContext = cache(async (): Promise<AppContext | null> => {
   const user = await getUser();
@@ -79,7 +80,7 @@ export async function getLetters(
   opts: { filter: LetterFilter; query: string; limit: number },
 ): Promise<{ items: LetterListItem[]; hasMore: boolean; error: boolean }> {
   const supabase = await createClient();
-  let q = supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(opts.limit + 1);
+  let q = supabase.from("messages").select("*").order("sort_at", { ascending: false }).limit(opts.limit + 1);
   if (opts.filter === "received") q = q.eq("recipient_id", userId);
   if (opts.filter === "sent") q = q.eq("sender_id", userId);
   const term = opts.query.trim().slice(0, 80);
@@ -91,22 +92,25 @@ export async function getLetters(
   if (error) return { items: [], hasMore: false, error: true };
   const rows = (data ?? []) as Message[];
   const items = rows.slice(0, opts.limit).map<LetterListItem>((m) => {
-    const sealed = m.recipient_id === userId && m.read_at === null;
+    const sealed = isCeremony(m.message_type) && m.recipient_id === userId && m.read_at === null;
     return { ...m, content: sealed ? "" : m.content, sealed };
   });
   return { items, hasMore: rows.length > opts.limit, error: false };
 }
 
-export async function getUnreadLetters(userId: string): Promise<Array<Pick<Message, "id" | "message_type" | "created_at" | "sender_id">>> {
+export type UnreadItem = Pick<Message, "id" | "message_type" | "created_at" | "sender_id" | "sort_at"> & { content: string };
+
+/** Unread messages for the recipient. Text is included only for styles that need no opening ceremony. */
+export async function getUnreadLetters(userId: string): Promise<UnreadItem[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
-    .select("id, message_type, created_at, sender_id")
+    .select("id, message_type, created_at, sender_id, sort_at, content")
     .eq("recipient_id", userId)
     .is("read_at", null)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  return (data ?? []) as Array<Pick<Message, "id" | "message_type" | "created_at" | "sender_id">>;
+    .order("sort_at", { ascending: false })
+    .limit(30);
+  return ((data ?? []) as UnreadItem[]).map((m) => (isCeremony(m.message_type) ? { ...m, content: "" } : m));
 }
 
 export async function getLetter(id: string): Promise<Message | null> {

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ConnectionBadge } from "@/components/home/ConnectionBadge";
+import { InlineMessages } from "@/components/home/InlineMessages";
+import { PingButton, QuickSend } from "@/components/home/QuickSend";
+import { isCeremony } from "@/lib/message-types";
 import { SealedLetter } from "@/components/home/SealedLetter";
 import { LetterRow } from "@/components/letters/LetterRow";
 import { TypeGlyph } from "@/components/letters/TypeGlyph";
@@ -21,7 +24,9 @@ export default async function HomePage() {
   ]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const now = new Date();
-  const [first, ...rest] = unread;
+  const sealedUnread = unread.filter((m) => isCeremony(m.message_type));
+  const plainUnread = unread.filter((m) => !isCeremony(m.message_type));
+  const [first, ...rest] = sealedUnread;
   const ended = ctx.space.status === "ended";
   const hasLetters = recent.items.length > 0;
 
@@ -37,11 +42,13 @@ export default async function HomePage() {
 
       {ended && <p role="status" className="mt-6 rounded-2xl bg-rose-soft px-4 py-3 text-sm text-cherry-deep">{t.home.endedBanner}</p>}
 
+      <InlineMessages items={plainUnread.map((m) => ({ id: m.id, type: m.message_type, content: m.content, createdAt: m.created_at }))} senderName={partnerName} />
+
       <section className="mt-8" aria-label={t.home.waitingForYou}>
         {first ? (
           <>
             <SealedLetter id={first.id} type={first.message_type} senderName={partnerName} when={formatTime(first.created_at)} />
-            <p className="mt-3 text-center text-sm text-muted">{unread.length === 1 ? t.home.oneWaiting : t.home.manyWaiting(unread.length)}</p>
+            <p className="mt-3 text-center text-sm text-muted">{sealedUnread.length === 1 ? t.home.oneWaiting : t.home.manyWaiting(sealedUnread.length)}</p>
             {rest.length > 0 && (
               <div className="mt-6">
                 <h2 className="mb-3 text-xs tracking-[0.2em] text-muted uppercase">{t.home.moreWaiting}</h2>
@@ -76,8 +83,10 @@ export default async function HomePage() {
       </section>
 
       {!ended && (
-        <div className="mt-6">
-          <ButtonLink href="/write" className="w-full">{hasLetters || first ? t.home.writeTo(partnerName) : t.home.emptyCta}</ButtonLink>
+        <div className="mt-8 space-y-3">
+          <QuickSend partnerName={partnerName} />
+          <PingButton partnerName={partnerName} />
+          <ButtonLink href="/write" variant="secondary" className="w-full">{hasLetters || first ? t.home.writeLetter : t.home.emptyCta}</ButtonLink>
         </div>
       )}
 

@@ -15,11 +15,14 @@ export interface PushPayload {
   badge: string;
 }
 
-export const PREVIEW_MAX_CHARS = 90;
+export const PREVIEW_MAX_CHARS = 140;
+
+const ICONS = { icon: "/icons/icon-192.png", badge: "/icons/badge-96.png" };
 
 /**
  * Builds what the lock screen shows. In "generic" mode NOTHING from the message
- * (not even the sender's name) is included.
+ * (not even the sender's name) is included. In "full" mode the title is the sender's name
+ * (as the recipient calls them) and the body is the text itself.
  */
 export function buildMessagePayload(input: {
   messageId: string;
@@ -28,25 +31,47 @@ export function buildMessagePayload(input: {
   content: string;
   previewMode: PreviewMode;
 }): PushPayload {
-  const base = {
-    tag: `message-${input.messageId}`,
-    url: `/letters/${input.messageId}`,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/badge-96.png",
-  };
-  if (input.previewMode === "full") {
-    return { ...base, title: input.senderName, body: truncate(input.content, PREVIEW_MAX_CHARS) };
+  const base = { ...ICONS, tag: `message-${input.messageId}`, url: `/letters/${input.messageId}` };
+  if (input.previewMode === "generic") {
+    return { ...base, title: brand.name, body: t.types[input.type].notification };
   }
-  return { ...base, title: brand.name, body: t.types[input.type].notification };
+  let body: string;
+  switch (input.type) {
+    case "thinking_of_you":
+      body = t.ping.pushBody;
+      break;
+    case "voice_note":
+      body = t.quick.pushBodyVoice;
+      break;
+    case "drawing":
+      body = t.quick.pushBodyDrawing;
+      break;
+    default:
+      body = truncate(input.content, PREVIEW_MAX_CHARS);
+  }
+  return { ...base, title: input.senderName || brand.name, body };
+}
+
+/** For gifts, reminders and other non-message events. Respects the same privacy choice. */
+export function buildEventPayload(input: {
+  tag: string;
+  url: string;
+  previewMode: PreviewMode;
+  fullTitle: string;
+  fullBody: string;
+  genericBody: string;
+}): PushPayload {
+  return input.previewMode === "full"
+    ? { ...ICONS, tag: input.tag, url: input.url, title: input.fullTitle, body: input.fullBody }
+    : { ...ICONS, tag: input.tag, url: input.url, title: brand.name, body: input.genericBody };
 }
 
 export function buildTestPayload(): PushPayload {
   return {
+    ...ICONS,
     title: brand.name,
     body: "This is a test. Notifications are working on this device.",
     tag: "test-notification",
     url: "/settings",
-    icon: "/icons/icon-192.png",
-    badge: "/icons/badge-96.png",
   };
 }

@@ -16,7 +16,7 @@ select test.ok((select display_name from public.profiles where id = :a) = 'Ana',
 select test.ok((select display_name from public.profiles where id = :c) = 'c', 'display name falls back to the email prefix');
 select test.ok((select display_name from public.profiles where id = :d) = 'd', 'blank display name falls back too');
 select test.ok((select count(*) from public.user_preferences) = 4, 'default preferences created');
-select test.ok((select notification_preview_mode from public.user_preferences where user_id = :a) = 'generic', 'notification preview defaults to the private/generic mode');
+select test.ok((select notification_preview_mode from public.user_preferences where user_id = :a) = 'full', 'notifications show the message by default (user can switch to private)');
 
 -- ---- anonymous users get nothing ----
 select test.anon();

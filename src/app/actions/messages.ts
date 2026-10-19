@@ -13,10 +13,17 @@ import { lookupSong } from "@/server/songs";
 import type { Message, PreviewMode, PushStatus } from "@/lib/types";
 
 export type SendResult =
-  | { ok: true; messageId: string; push: "sent" | "skipped" | "failed" | "already_sent" }
+  | { ok: true; messageId: string; push: "sent" | "skipped" | "failed" | "already_sent" | "scheduled" }
   | { ok: false; error: string };
 
-export async function sendMessageAction(input: { content: string; type: string; clientId: string; song?: SongInput | null }): Promise<SendResult> {
+export async function sendMessageAction(input: {
+  content: string;
+  type: string;
+  clientId: string;
+  song?: SongInput | null;
+  /** ISO time for a time-capsule message. */
+  deliverAt?: string | null;
+}): Promise<SendResult> {
   const parsed = sendMessageSchema.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
@@ -50,6 +57,8 @@ export async function sendMessageAction(input: { content: string; type: string; 
     p_type: parsed.data.type,
     p_client_id: parsed.data.clientId,
     p_song: pSong,
+    p_attachment: null,
+    p_deliver_at: input.deliverAt ?? null,
   });
   if (error || !data) return { ok: false, error: sendErrorMessage(dbErrorCode(error)) };
 
@@ -57,7 +66,8 @@ export async function sendMessageAction(input: { content: string; type: string; 
   // A retry of an already-stored draft must never notify twice.
   if (!is_new) return { ok: true, messageId: message.id, push: "already_sent" };
 
-  const push = await notifyRecipient(message);
+  // Time capsules wait; the daily job nudges the phone when they open.
+  const push = message.deliver_at ? "scheduled" : await notifyRecipient(message);
   revalidatePath("/letters");
   revalidatePath("/home");
   return { ok: true, messageId: message.id, push };
@@ -72,9 +82,11 @@ async function notifyRecipient(message: Message): Promise<"sent" | "skipped" | "
     return "skipped";
   }
   try {
-    const [{ data: prefs }, { data: sender }] = await Promise.all([
+    const [{ data: prefs }, { data: sender }, { data: nick }] = await Promise.all([
       admin.from("user_preferences").select("notifications_enabled, notification_preview_mode").eq("user_id", message.recipient_id).maybeSingle(),
       admin.from("profiles").select("display_name").eq("id", message.sender_id).maybeSingle(),
+      // What the RECIPIENT calls the sender, so the lock screen reads like their own contact name.
+      admin.from("couple_members").select("partner_nickname").eq("user_id", message.recipient_id).maybeSingle(),
     ]);
     const enabled = (prefs as { notifications_enabled: boolean } | null)?.notifications_enabled ?? true;
     if (!enabled) {
@@ -85,7 +97,7 @@ async function notifyRecipient(message: Message): Promise<"sent" | "skipped" | "
     const payload = buildMessagePayload({
       messageId: message.id,
       type: message.message_type,
-      senderName: (sender as { display_name: string } | null)?.display_name ?? "",
+      senderName: (nick as { partner_nickname: string | null } | null)?.partner_nickname || (sender as { display_name: string } | null)?.display_name || "",
       content: message.content,
       previewMode,
     });

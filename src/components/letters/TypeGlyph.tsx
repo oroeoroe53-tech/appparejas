@@ -36,6 +36,35 @@ export function TypeGlyph({ type, size = 48 }: { type: MessageType; size?: numbe
           <circle cx="32" cy="14" r="2" fill="#9d394d" />
         </svg>
       );
+    case "quick":
+      return (
+        <svg {...common}>
+          <path d="M8 8h48a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H30l-10 9v-9H8a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4z" fill="#f7e6e3" stroke="#9d394d" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M14 18h36M14 26h22" stroke="#9d394d" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case "thinking_of_you":
+      return (
+        <svg {...common}>
+          <circle cx="32" cy="24" r="20" stroke="#e9b8b8" strokeWidth="1.5" />
+          <circle cx="32" cy="24" r="12" stroke="#e9b8b8" strokeWidth="1.5" />
+          <path d="M32 33c-9-7-12-11-12-15 0-4 3-6 6-6 3 0 5 1.5 6 4 1-2.5 3-4 6-4 3 0 6 2 6 6 0 4-3 8-12 15z" fill="#9d394d" />
+        </svg>
+      );
+    case "voice_note":
+      return (
+        <svg {...common}>
+          <rect x="6" y="8" width="52" height="32" rx="16" fill="#f7e6e3" />
+          <path d="M16 24v0M22 18v12M28 14v20M34 20v8M40 16v16M46 21v6" stroke="#9d394d" strokeWidth="2.6" strokeLinecap="round" />
+        </svg>
+      );
+    case "drawing":
+      return (
+        <svg {...common}>
+          <rect x="10" y="4" width="44" height="40" rx="3" fill="#fffdf8" stroke="#e5d7c8" />
+          <path d="M18 32c6-14 10 6 16-6s8-2 12-8" stroke="#9d394d" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        </svg>
+      );
     case "old_letter":
       return (
         <svg {...common}>
