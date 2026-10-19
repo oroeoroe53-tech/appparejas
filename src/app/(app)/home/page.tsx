@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ConnectionBadge } from "@/components/home/ConnectionBadge";
+import { MoodPicker } from "@/components/character/MoodPicker";
+import { CharacterStage, freshMood } from "@/components/home/CharacterStage";
 import { InlineMessages } from "@/components/home/InlineMessages";
 import { PingButton, QuickSend } from "@/components/home/QuickSend";
 import { isCeremony } from "@/lib/message-types";
@@ -9,18 +10,20 @@ import { LetterRow } from "@/components/letters/LetterRow";
 import { TypeGlyph } from "@/components/letters/TypeGlyph";
 import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
-import { dayPart, formatMonth, formatTime, formatToday } from "@/lib/utils";
+import { dayPart, formatTime, formatToday } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getLetters, getUnreadLetters, partnerLabel } from "@/server/queries";
+import { getCharacters, getLetters, getMoods, getUnreadLetters, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "For you" };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const ctx = await requireSpace({ allowEnded: true });
-  const [unread, recent] = await Promise.all([
+  const [unread, recent, moods, characters] = await Promise.all([
     getUnreadLetters(ctx.user.id),
     getLetters(ctx.user.id, { filter: "all", query: "", limit: 4 }),
+    getMoods(),
+    getCharacters(ctx.user.id),
   ]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const now = new Date();
@@ -35,10 +38,23 @@ export default async function HomePage() {
       <header className="pt-8">
         <p className="text-xs tracking-[0.2em] text-muted uppercase">{formatToday(now)}</p>
         <h1 className="mt-2 font-serif text-[2.2rem] leading-[1.1] tracking-tight">{t.home.greeting(dayPart(now.getHours()), ctx.profile.display_name)}</h1>
-        <div className="mt-5">
-          <ConnectionBadge me={ctx.profile} partner={ctx.space.partner} partnerName={partnerName} since={formatMonth(ctx.space.partnerJoinedAt ?? ctx.space.joinedAt)} />
-        </div>
       </header>
+
+      <CharacterStage
+        partnerName={partnerName}
+        partnerConfig={characters.mine}
+        partnerMood={moods.find((m) => m.user_id !== ctx.user.id) ?? null}
+        togetherSince={ctx.space.togetherSince}
+        nowMs={now.getTime()}
+      />
+
+      {!ended && (
+        <div className="mt-6 space-y-3">
+          <QuickSend partnerName={partnerName} />
+          <PingButton partnerName={partnerName} />
+          <ButtonLink href="/write" variant="secondary" className="w-full">{hasLetters || first ? t.home.writeLetter : t.home.emptyCta}</ButtonLink>
+        </div>
+      )}
 
       {ended && <p role="status" className="mt-6 rounded-2xl bg-rose-soft px-4 py-3 text-sm text-cherry-deep">{t.home.endedBanner}</p>}
 
@@ -82,13 +98,10 @@ export default async function HomePage() {
         )}
       </section>
 
-      {!ended && (
-        <div className="mt-8 space-y-3">
-          <QuickSend partnerName={partnerName} />
-          <PingButton partnerName={partnerName} />
-          <ButtonLink href="/write" variant="secondary" className="w-full">{hasLetters || first ? t.home.writeLetter : t.home.emptyCta}</ButtonLink>
-        </div>
-      )}
+
+      <div className="mt-8">
+        <MoodPicker current={freshMood(moods.find((m) => m.user_id === ctx.user.id) ?? null, now.getTime())} />
+      </div>
 
       {hasLetters && (
         <section className="mt-10" aria-labelledby="recent-title">

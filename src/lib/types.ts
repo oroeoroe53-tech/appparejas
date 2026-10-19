@@ -50,4 +50,6 @@ export interface SpaceContext {
   partnerNickname: string | null;
   partner: Profile | null;
   partnerJoinedAt: string | null;
+  /** Calendar date (YYYY-MM-DD) the couple chose as their start. */
+  togetherSince: string | null;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Mail, PenLine, Settings } from "lucide-react";
+import { Archive, HeartHandshake, Mail, PenLine, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { t } from "@/content";
@@ -10,6 +10,7 @@ const items = [
   { href: "/home", label: t.nav.home, Icon: Mail },
   { href: "/write", label: t.nav.write, Icon: PenLine },
   { href: "/letters", label: t.nav.letters, Icon: Archive },
+  { href: "/us", label: t.nav.us, Icon: HeartHandshake },
   { href: "/settings", label: t.nav.settings, Icon: Settings },
 ];
 
