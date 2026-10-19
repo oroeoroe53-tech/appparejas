@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import { FullscreenImage } from "@/components/media/FullscreenImage";
 import { t } from "@/content";
 import { EASE, paragraphs, useReveal, type ExperienceProps } from "./shared";
 
@@ -22,8 +23,7 @@ export function DrawingCard(props: ExperienceProps) {
       >
         <span aria-hidden="true" className="absolute -top-3 left-1/2 h-6 w-24 -translate-x-1/2 -rotate-2 rounded-[2px] bg-rose/75 shadow-sm" />
         {media ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={media.url} alt={t.drawing.from(senderName)} className="aspect-square w-full rounded-[2px] bg-[#fffdf8] object-contain" />
+          <FullscreenImage src={media.url} alt={t.drawing.from(senderName)} className="aspect-square w-full rounded-[2px] bg-[#fffdf8] object-contain" />
         ) : (
           <div className="aspect-square w-full bg-cream" />
         )}

@@ -6,8 +6,9 @@ export function Field({
   hint,
   error,
   className,
+  ref,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; error?: string }) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; error?: string; ref?: React.Ref<HTMLInputElement> }) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -17,6 +18,7 @@ export function Field({
         {label}
       </label>
       <input
+        ref={ref}
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={[hint ? hintId : "", error ? errorId : ""].filter(Boolean).join(" ") || undefined}

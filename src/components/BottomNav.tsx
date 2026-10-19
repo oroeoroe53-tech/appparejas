@@ -7,11 +7,11 @@ import { t } from "@/content";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/home", label: t.nav.home, Icon: Mail },
-  { href: "/write", label: t.nav.write, Icon: PenLine },
-  { href: "/letters", label: t.nav.letters, Icon: Archive },
-  { href: "/us", label: t.nav.us, Icon: HeartHandshake },
-  { href: "/settings", label: t.nav.settings, Icon: Settings },
+  { href: "/home", label: t.nav.home, Icon: Mail, primary: false },
+  { href: "/letters", label: t.nav.letters, Icon: Archive, primary: false },
+  { href: "/write", label: t.nav.write, Icon: PenLine, primary: true },
+  { href: "/us", label: t.nav.us, Icon: HeartHandshake, primary: false },
+  { href: "/settings", label: t.nav.settings, Icon: Settings, primary: false },
 ];
 
 export function BottomNav({ unread }: { unread: number }) {
@@ -19,8 +19,22 @@ export function BottomNav({ unread }: { unread: number }) {
   return (
     <nav aria-label={t.nav.label} className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-cream/85 backdrop-blur-xl">
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-2">
-        {items.map(({ href, label, Icon }) => {
+        {items.map(({ href, label, Icon, primary }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
+          if (primary) {
+            return (
+              <li key={href} className="flex flex-1 justify-center">
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className="relative -mt-5 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-cherry text-on-cherry shadow-lift ring-4 ring-cream transition active:scale-95"
+                >
+                  <Icon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
+                  <span className="mt-0.5 text-[10px] font-medium">{label}</span>
+                </Link>
+              </li>
+            );
+          }
           return (
             <li key={href} className="flex-1">
               <Link

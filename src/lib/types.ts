@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  timezone?: string | null;
 }
 
 export interface Preferences {

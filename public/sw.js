@@ -71,9 +71,16 @@ self.addEventListener("push", (event) => {
     icon: data.icon || "/icons/icon-192.png",
     badge: data.badge || "/icons/badge-96.png",
     tag: data.tag || undefined, // same tag => the OS replaces rather than duplicates
+    image: typeof data.image === "string" && data.image.startsWith("https://") ? data.image : undefined,
     data: { url: typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/home" },
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      // A dot/number on the app icon where the platform supports it.
+      self.navigator && self.navigator.setAppBadge ? self.navigator.setAppBadge().catch(() => undefined) : Promise.resolve(),
+    ]),
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

@@ -7,8 +7,10 @@ A private PWA for two people. Instead of chat bubbles, messages arrive as small 
 - **Quick message:** type a line on Home, send, and it lands on their lock screen **with your words** (their notification privacy can be switched to a generic line in Settings).
 - **Thinking of you:** one tap, no words.
 - **Letters with ceremony:** Love Letter, Little Note, Heart Message, Hug in Words, Secret Message and Old Letter (parchment, quill, red wax seal). Any message can carry a **song clip** and can be **scheduled** as a time capsule that opens on a chosen morning.
-- **Voice notes and drawings.**
+- **Voice notes and drawings.** A drawing arrives whole on Home (tap for full screen) and, on Android, as the big picture of the notification.
 - **Your person, drawn by you:** each of you builds a character of the other (CC0 Lorelei art, 48 hairstyles, glasses, beard, freckles…). It lives on your Home screen, breathes and blinks, shows their mood, and you can see how they drew you.
+- **A full-screen portrait of your person** (`/us/portrait`, also an app-icon shortcut on Android) with their mood, their local time and a send box right there.
+- **Jar of reasons** (pull a slip, plus a reason of the day on Home) and **"Open when…" letters** sealed until the right moment.
 - **Together:** days-together counter, plans and anniversaries with countdowns (plus automatic 100/200/365-day milestones), our story timeline with photos, albums, a daily question (answers unlock when you both reply), dreams and bucket list, love coupons, and a shared playlist.
 
 > The product name lives in one place: [`src/config/brand.ts`](src/config/brand.ts). All UI copy lives in [`src/content/en.ts`](src/content/en.ts) (swap `src/content/index.ts` to add a translation).
@@ -96,7 +98,9 @@ Without Supabase variables the app still builds and starts, and redirects to a `
 
 1. Create a project at supabase.com.
 2. **Schema:** apply the files in [`supabase/migrations/`](supabase/migrations/) **in order** — paste each into the SQL editor, or use the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
-   - **Already applied the first two (`init`, `old_letter_and_song`)?** Paste just [`supabase/bundles/after-02.sql`](supabase/bundles/after-02.sql): it contains everything newer in one transaction (regenerate it with `npm run sql:bundle`).
+   - **Applied only `init` and `old_letter_and_song`?** Paste [`supabase/bundles/after-02.sql`](supabase/bundles/after-02.sql): everything newer, in one transaction.
+   - **Already applied the earlier `after-02.sql` (through the albums/media release)?** Paste only [`supabase/bundles/after-07.sql`](supabase/bundles/after-07.sql) (jar of reasons, open-when letters, time zones). Never paste both.
+   - Regenerate the bundles with `npm run sql:bundle`.
    - The bundle also creates the private **`couple-media`** storage bucket and its policies (needs the Storage service enabled, which is the Supabase default).
 3. **Auth → URL Configuration:** set *Site URL* to your `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to *Redirect URLs* (needed for email confirmation and password reset). Open those emailed links on the same device/browser that requested them (PKCE).
 4. **Auth → Providers → Email:** keep email/password on. Decide whether to require email confirmation (the app handles both). Set a sensible minimum password length (the app enforces 8).
@@ -180,6 +184,9 @@ npm run build       # production build
 - Time capsules open at 06:00 UTC on the chosen day regardless of time zone.
 - Daily question and reminders use UTC calendar days.
 - Characters use the open-source Lorelei style, so they resemble a person but are not a likeness from a photo.
+- **There is no home-screen widget:** installed web apps cannot provide native iOS/Android widgets. The closest things are the full-screen portrait, the unread number on the app icon (`setAppBadge`, where supported) and the Android long-press shortcuts.
+- A notification picture (drawings) only shows on Android Chrome; iOS ignores it, and it is only sent in the "show the message" privacy mode.
+- Your person's local time appears once they have opened the app (it shares the device's time zone).
 - Songs are 30-second previews only (see *Song clips*); no autoplay before the first tap.
 - English only for now (copy is centralised for translation).
 

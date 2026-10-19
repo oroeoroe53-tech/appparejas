@@ -5,6 +5,7 @@ import { NextUp } from "@/components/home/NextUp";
 import { QuestionCard } from "@/components/us/Forms";
 import { questionForDay } from "@/content/questions";
 import { toDayNumber, todayIso, upcoming } from "@/lib/dates";
+import { signedUrls } from "@/server/media";
 import { MoodPicker } from "@/components/character/MoodPicker";
 import { CharacterStage, freshMood } from "@/components/home/CharacterStage";
 import { InlineMessages } from "@/components/home/InlineMessages";
@@ -17,7 +18,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
 import { dayPart, formatTime, formatToday } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
+import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getReasons, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "For you" };
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const ctx = await requireSpace({ allowEnded: true });
   const today = todayIso(new Date());
-  const [unread, recent, moods, characters, events, answers, theyAnswered, coupons] = await Promise.all([
+  const [unread, recent, moods, characters, events, answers, theyAnswered, coupons, reasons] = await Promise.all([
     getUnreadLetters(ctx.user.id),
     getLetters(ctx.user.id, { filter: "all", query: "", limit: 4 }),
     getMoods(),
@@ -34,7 +35,10 @@ export default async function HomePage() {
     getAnswers(4),
     partnerAnswered(today),
     getCoupons(),
+    getReasons(),
   ]);
+  const theirReasons = reasons.filter((r) => r.created_by !== ctx.user.id);
+  const reasonOfDay = theirReasons.length > 0 ? theirReasons[toDayNumber(today) % theirReasons.length] : null;
   const waitingCoupons = coupons.filter((c) => c.receiver_id === ctx.user.id && c.status === "available").length;
   const comingUp = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 45 });
   const myAnswer = answers.find((a) => a.day === today && a.user_id === ctx.user.id)?.answer ?? null;
@@ -43,6 +47,7 @@ export default async function HomePage() {
   const now = new Date();
   const sealedUnread = unread.filter((m) => isCeremony(m.message_type));
   const plainUnread = unread.filter((m) => !isCeremony(m.message_type));
+  const mediaUrls = await signedUrls(plainUnread.map((m) => m.attachment_path ?? ""));
   const [first, ...rest] = sealedUnread;
   const ended = ctx.space.status === "ended";
   const hasLetters = recent.items.length > 0;
@@ -60,6 +65,7 @@ export default async function HomePage() {
         partnerMood={moods.find((m) => m.user_id !== ctx.user.id) ?? null}
         togetherSince={ctx.space.togetherSince}
         nowMs={now.getTime()}
+        partnerTimezone={ctx.space.partner?.timezone ?? null}
       />
 
       {!ended && (
@@ -72,7 +78,7 @@ export default async function HomePage() {
 
       {ended && <p role="status" className="mt-6 rounded-2xl bg-rose-soft px-4 py-3 text-sm text-cherry-deep">{t.home.endedBanner}</p>}
 
-      <InlineMessages items={plainUnread.map((m) => ({ id: m.id, type: m.message_type, content: m.content, createdAt: m.created_at }))} senderName={partnerName} />
+      <InlineMessages items={plainUnread.map((m) => ({ id: m.id, type: m.message_type, content: m.content, createdAt: m.created_at, media: m.attachment_path && mediaUrls[m.attachment_path] ? { url: mediaUrls[m.attachment_path] as string, seconds: m.attachment_seconds } : undefined }))} senderName={partnerName} />
 
       <section className="mt-8" aria-label={t.home.waitingForYou}>
         {first ? (
@@ -114,7 +120,14 @@ export default async function HomePage() {
 
 
       {!ended && (
-        <div className="mt-8 space-y-4">
+        <div className="mt-10 space-y-4">
+          <h2 className="text-xs tracking-[0.22em] text-muted uppercase">{t.home.today}</h2>
+          {reasonOfDay && (
+            <Link href="/us/jar" className="paper block rounded-md px-5 py-4 shadow-soft">
+              <p className="text-[11px] tracking-[0.18em] text-[#8a6d66] uppercase">{t.jar.today} · {t.jar.todayFrom(partnerName)}</p>
+              <p className="mt-2 font-serif text-[1.15rem] italic leading-snug">{reasonOfDay.content}</p>
+            </Link>
+          )}
           <QuestionCard question={questionForDay(toDayNumber(today))} partnerName={partnerName} myAnswer={myAnswer} partnerAnswer={theirAnswer} partnerAnswered={theyAnswered} />
           {waitingCoupons > 0 && (
             <Link href="/us/coupons" className="flex items-center gap-3 rounded-3xl border-2 border-dashed border-rose bg-paper px-4 py-3.5 text-[15px]">
@@ -125,7 +138,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-10">
         <MoodPicker current={freshMood(moods.find((m) => m.user_id === ctx.user.id) ?? null, now.getTime())} />
       </div>
 

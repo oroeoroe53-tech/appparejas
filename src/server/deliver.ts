@@ -1,4 +1,5 @@
 import "server-only";
+import { MEDIA_BUCKET } from "@/lib/media";
 import { buildMessagePayload } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Message, PreviewMode, PushStatus } from "@/lib/types";
@@ -29,12 +30,19 @@ export async function notifyRecipient(message: Message): Promise<"sent" | "skipp
       return "skipped";
     }
     const previewMode = ((prefs as { notification_preview_mode: PreviewMode } | null)?.notification_preview_mode ?? "generic") as PreviewMode;
+    // A drawing travels as the notification picture (full mode only). The link is signed and expires in 24 hours.
+    let imageUrl: string | undefined;
+    if (message.message_type === "drawing" && message.attachment_path && previewMode === "full") {
+      const { data: signed } = await admin.storage.from(MEDIA_BUCKET).createSignedUrl(message.attachment_path, 60 * 60 * 24);
+      imageUrl = signed?.signedUrl;
+    }
     const payload = buildMessagePayload({
       messageId: message.id,
       type: message.message_type,
       senderName: (nick as { partner_nickname: string | null } | null)?.partner_nickname || (sender as { display_name: string } | null)?.display_name || "",
       content: message.content,
       previewMode,
+      imageUrl,
     });
     const outcome = await sendPushToUser(admin, message.recipient_id, payload);
     if (outcome.status === "sent") {

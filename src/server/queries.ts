@@ -27,7 +27,7 @@ export const getAppContext = cache(async (): Promise<AppContext | null> => {
   const supabase = await createClient();
 
   const [profileRes, prefsRes, membersRes, spaceRes] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, avatar_url").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("id, display_name, avatar_url, timezone").eq("id", user.id).maybeSingle(),
     supabase.from("user_preferences").select("notifications_enabled, notification_preview_mode, theme").eq("user_id", user.id).maybeSingle(),
     supabase.from("couple_members").select("couple_space_id, user_id, partner_nickname, joined_at"),
     supabase.from("couple_spaces").select("id, status, together_since").maybeSingle(),
@@ -49,7 +49,7 @@ export const getAppContext = cache(async (): Promise<AppContext | null> => {
   if (me && spaceRow) {
     let partner: Profile | null = null;
     if (other) {
-      const { data } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", other.user_id).maybeSingle();
+      const { data } = await supabase.from("profiles").select("id, display_name, avatar_url, timezone").eq("id", other.user_id).maybeSingle();
       partner = (data as Profile | null) ?? null;
     }
     space = {
@@ -101,14 +101,14 @@ export async function getLetters(
   return { items, hasMore: rows.length > opts.limit, error: false };
 }
 
-export type UnreadItem = Pick<Message, "id" | "message_type" | "created_at" | "sender_id" | "sort_at"> & { content: string };
+export type UnreadItem = Pick<Message, "id" | "message_type" | "created_at" | "sender_id" | "sort_at" | "attachment_path" | "attachment_seconds"> & { content: string };
 
 /** Unread messages for the recipient. Text is included only for styles that need no opening ceremony. */
 export async function getUnreadLetters(userId: string): Promise<UnreadItem[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
-    .select("id, message_type, created_at, sender_id, sort_at, content")
+    .select("id, message_type, created_at, sender_id, sort_at, content, attachment_path, attachment_seconds")
     .eq("recipient_id", userId)
     .is("read_at", null)
     .order("sort_at", { ascending: false })
@@ -279,4 +279,106 @@ export async function getPhotos(albumId?: string): Promise<PhotoRow[]> {
   if (albumId) q = q.eq("album_id", albumId);
   const { data } = await q;
   return (data ?? []) as PhotoRow[];
+}
+
+export interface ReasonRow {
+  id: string;
+  content: string;
+  created_by: string;
+  created_at: string;
+}
+
+export async function getReasons(): Promise<ReasonRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("reasons").select("id, content, created_by, created_at").order("created_at", { ascending: false }).limit(500);
+  return (data ?? []) as ReasonRow[];
+}
+
+export interface OpenWhenRow {
+  id: string;
+  author_id: string;
+  recipient_id: string;
+  label: string;
+  style: "love_letter" | "old_letter" | "little_note" | "heart_message" | "hug_in_words" | "secret_message";
+  created_at: string;
+  opened_at: string | null;
+}
+
+export async function getOpenWhen(): Promise<{ letters: OpenWhenRow[]; bodies: Record<string, string> }> {
+  const supabase = await createClient();
+  const [{ data: letters }, { data: bodies }] = await Promise.all([
+    supabase.from("open_when_letters").select("id, author_id, recipient_id, label, style, created_at, opened_at").order("created_at", { ascending: false }).limit(100),
+    // RLS only returns bodies the user may read: their own, or letters addressed to them that are already open.
+    supabase.from("open_when_bodies").select("letter_id, content").limit(100),
+  ]);
+  const map: Record<string, string> = {};
+  for (const b of (bodies ?? []) as Array<{ letter_id: string; content: string }>) map[b.letter_id] = b.content;
+  return { letters: (letters ?? []) as OpenWhenRow[], bodies: map };
+}
+
+export interface HubSummary {
+  albums: number;
+  albumCoverPath: string | null;
+  story: number;
+  latestStory: string | null;
+  playlist: number;
+  latestSong: { title: string; artist: string; artwork: string | null } | null;
+  dreamsDone: number;
+  dreamsTotal: number;
+  couponsForMe: number;
+  couponsFromMe: number;
+  reasonsMine: number;
+  reasonsTheirs: number;
+  openWhenForMe: number;
+  answeredToday: boolean;
+}
+
+/** Small live previews for the tiles on the Us screen. */
+export async function getHubSummary(userId: string, today: string): Promise<HubSummary> {
+  const supabase = await createClient();
+  const count = async (table: string, filter?: (q: any) => any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    let q: any = supabase.from(table).select("id", { count: "exact", head: true }); // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (filter) q = filter(q);
+    const { count: n } = await q;
+    return (n as number | null) ?? 0;
+  };
+  const [albums, story, playlist, dreamsDone, dreamsTotal, couponsForMe, couponsFromMe, reasonsMine, reasonsAll, openWhenForMe, latestAlbum, latestStory, latestSong, answered] = await Promise.all([
+    count("albums"),
+    count("timeline_entries"),
+    count("playlist_songs"),
+    count("dreams", (q) => q.eq("done", true)),
+    count("dreams"),
+    count("coupons", (q) => q.eq("receiver_id", userId).eq("status", "available")),
+    count("coupons", (q) => q.eq("giver_id", userId).eq("status", "available")),
+    count("reasons", (q) => q.eq("created_by", userId)),
+    count("reasons"),
+    count("open_when_letters", (q) => q.eq("recipient_id", userId).is("opened_at", null)),
+    supabase.from("albums").select("id").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("timeline_entries").select("title").order("happened_on", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("playlist_songs").select("song_title, song_artist, song_artwork_url").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("question_answers").select("day", { count: "exact", head: true }).eq("user_id", userId).eq("day", today),
+  ]);
+  let albumCoverPath: string | null = null;
+  const albumId = (latestAlbum.data as { id: string } | null)?.id;
+  if (albumId) {
+    const { data } = await supabase.from("photos").select("storage_path").eq("album_id", albumId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    albumCoverPath = (data as { storage_path: string } | null)?.storage_path ?? null;
+  }
+  const song = latestSong.data as { song_title: string; song_artist: string; song_artwork_url: string | null } | null;
+  return {
+    albums,
+    albumCoverPath,
+    story,
+    latestStory: (latestStory.data as { title: string } | null)?.title ?? null,
+    playlist,
+    latestSong: song ? { title: song.song_title, artist: song.song_artist, artwork: song.song_artwork_url } : null,
+    dreamsDone,
+    dreamsTotal,
+    couponsForMe,
+    couponsFromMe,
+    reasonsMine,
+    reasonsTheirs: Math.max(0, reasonsAll - reasonsMine),
+    openWhenForMe,
+    answeredToday: (answered.count ?? 0) > 0,
+  };
 }

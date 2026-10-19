@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = ctx.space ? (await getUnreadLetters(ctx.user.id)).length : 0;
   return (
     <>
-      <AppEffects theme={ctx.preferences.theme} pushWanted={ctx.preferences.notifications_enabled} />
+      <AppEffects theme={ctx.preferences.theme} pushWanted={ctx.preferences.notifications_enabled} unread={unread} timezone={ctx.profile.timezone ?? null} />
       <div id="main" className="safe-top mx-auto w-full max-w-md px-5 pb-32">
         {children}
       </div>

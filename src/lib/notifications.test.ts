@@ -43,6 +43,18 @@ describe("buildMessagePayload", () => {
   });
 });
 
+describe("drawing notification picture", () => {
+  const url = "https://x.supabase.co/storage/v1/object/sign/couple-media/a.png?token=t";
+  it("is attached only for drawings in full mode", () => {
+    expect(buildMessagePayload({ ...base, type: "drawing", previewMode: "full", imageUrl: url }).image).toBe(url);
+    expect(buildMessagePayload({ ...base, type: "drawing", previewMode: "generic", imageUrl: url }).image).toBeUndefined();
+    expect(buildMessagePayload({ ...base, type: "quick", previewMode: "full", imageUrl: url }).image).toBeUndefined();
+  });
+  it("refuses non-https links", () => {
+    expect(buildMessagePayload({ ...base, type: "drawing", previewMode: "full", imageUrl: "http://x/a.png" }).image).toBeUndefined();
+  });
+});
+
 describe("buildEventPayload", () => {
   const input = { tag: "coupon-1", url: "/us/coupons", fullTitle: "Bunny", fullBody: "Gave you a coupon: breakfast in bed", genericBody: "You have a little surprise." };
   it("respects the privacy choice", () => {

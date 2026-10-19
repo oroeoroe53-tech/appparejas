@@ -1,59 +1,100 @@
 import type { Metadata } from "next";
-import { BookHeart, CalendarHeart, Images, ListChecks, MessageCircleQuestion, Music2, Ticket } from "lucide-react";
+import { BookHeart, CalendarHeart, Images, ListChecks, MailOpen, MessageCircleQuestion, Music2, Sparkles, Ticket } from "lucide-react";
 import Link from "next/link";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
-import { TogetherForm } from "@/components/us/TogetherForm";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { HubTile } from "@/components/us/HubTile";
+import { TogetherForm } from "@/components/us/TogetherForm";
+import { itemTitle, whenLabel } from "@/components/us/labels";
 import { t } from "@/content";
 import { renderFrames } from "@/lib/character";
+import { todayIso, upcoming } from "@/lib/dates";
+import { daysTogether } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getCharacters, partnerLabel } from "@/server/queries";
+import { signedUrls } from "@/server/media";
+import { getCharacters, getEvents, getHubSummary, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "Us" };
 export const dynamic = "force-dynamic";
 
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-9" aria-label={title}>
+      <h2 className="mb-3 text-xs tracking-[0.22em] text-muted uppercase">{title}</h2>
+      <div className="grid grid-cols-2 gap-3">{children}</div>
+    </section>
+  );
+}
+
 export default async function UsPage() {
   const ctx = await requireSpace({ allowEnded: true });
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
-  const { mine } = await getCharacters(ctx.user.id);
+  const now = new Date();
+  const today = todayIso(now);
+  const [{ mine, theirs }, summary, events] = await Promise.all([getCharacters(ctx.user.id), getHubSummary(ctx.user.id, today), getEvents()]);
+  const covers = await signedUrls([summary.albumCoverPath ?? ""]);
+  const cover = summary.albumCoverPath ? covers[summary.albumCoverPath] : undefined;
+  const next = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 365 })[0];
+  const days = ctx.space.togetherSince ? daysTogether(ctx.space.togetherSince, now) : null;
+
   return (
     <>
       <PageHeader title={t.us.title} subtitle={t.us.subtitle} />
-      <div className="space-y-4">
-        <Link href="/us/character" className="flex items-center gap-4 rounded-3xl bg-paper p-4 shadow-soft transition active:scale-[0.99]">
-          <span className="h-16 w-16 shrink-0">
+
+      <section aria-label={t.hub.groups.people} className="relative overflow-hidden rounded-[2rem] bg-paper p-5 shadow-soft">
+        <div className="pointer-events-none absolute -left-10 -top-14 h-48 w-48 rounded-full bg-rose/30 blur-3xl" aria-hidden />
+        <div className="relative flex items-center justify-center">
+          <div className="-mr-3 text-center">
             {mine ? (
-              <CharacterFigure frames={renderFrames(mine)} label={t.character.previewAlt(partnerName)} interactive={false} className="h-16 w-16" />
+              <CharacterFigure frames={renderFrames(mine)} label={t.character.previewAlt(partnerName)} className="h-28 w-28" interactive={false} />
             ) : (
-              <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-dashed border-rose text-rose" aria-hidden>+</span>
+              <span className="grid h-28 w-28 place-items-center rounded-full border-2 border-dashed border-rose text-3xl text-rose" aria-hidden>+</span>
             )}
-          </span>
-          <span>
-            <span className="block font-serif text-lg">{t.us.sections.character}</span>
-            <span className="block text-sm text-muted">{t.us.sections.characterHint}</span>
-          </span>
-        </Link>
-        {[
-          { href: "/us/albums", Icon: Images, title: t.us.sections.albums, hint: t.us.sections.albumsHint },
-          { href: "/us/plans", Icon: CalendarHeart, title: t.us.sections.plans, hint: t.us.sections.plansHint },
-          { href: "/us/story", Icon: BookHeart, title: t.us.sections.story, hint: t.us.sections.storyHint },
-          { href: "/us/questions", Icon: MessageCircleQuestion, title: t.us.sections.questions, hint: t.us.sections.questionsHint },
-          { href: "/us/dreams", Icon: ListChecks, title: t.us.sections.dreams, hint: t.us.sections.dreamsHint },
-          { href: "/us/coupons", Icon: Ticket, title: t.us.sections.coupons, hint: t.us.sections.couponsHint },
-          { href: "/us/playlist", Icon: Music2, title: t.us.sections.playlist, hint: t.us.sections.playlistHint },
-        ].map(({ href, Icon, title, hint }) => (
-          <Link key={href} href={href} className="flex items-center gap-4 rounded-3xl bg-paper p-4 shadow-soft transition active:scale-[0.99]">
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-rose-soft text-cherry"><Icon className="h-7 w-7" aria-hidden /></span>
-            <span>
-              <span className="block font-serif text-lg">{title}</span>
-              <span className="block text-sm text-muted">{hint}</span>
-            </span>
-          </Link>
-        ))}
-        <section className="rounded-3xl border border-line p-5">
-          <TogetherForm initial={ctx.space.togetherSince} today={new Date().toISOString().slice(0, 10)} />
-        </section>
-      </div>
+            <p className="mt-2 max-w-[7rem] truncate font-serif text-sm">{partnerName}</p>
+          </div>
+          <div className="-ml-3 text-center">
+            {theirs ? (
+              <CharacterFigure frames={renderFrames(theirs)} label={t.character.previewAlt(ctx.profile.display_name)} className="h-28 w-28" interactive={false} />
+            ) : (
+              <span className="grid h-28 w-28 place-items-center rounded-full border-2 border-dashed border-line text-3xl text-stone" aria-hidden>?</span>
+            )}
+            <p className="mt-2 max-w-[7rem] truncate font-serif text-sm">{ctx.profile.display_name}</p>
+          </div>
+        </div>
+        {days !== null && <p className="relative mt-3 text-center text-sm text-cherry">{t.us.dayCount(days)}</p>}
+        <div className="relative mt-4 flex flex-wrap justify-center gap-2 text-sm">
+          <Link href="/us/portrait" className="inline-flex min-h-10 items-center rounded-full bg-cherry px-5 font-medium text-on-cherry">{t.hub.seeBig}</Link>
+          <Link href="/us/character" className="inline-flex min-h-10 items-center rounded-full border border-line px-5">{t.hub.edit}</Link>
+        </div>
+      </section>
+
+      <Group title={t.hub.groups.moments}>
+        <HubTile href="/us/albums" title={t.us.sections.albums} preview={t.hub.albums(summary.albums)} Icon={Images} accent="sky" wide={Boolean(cover)}>
+          {cover && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cover} alt="" loading="lazy" className="relative mt-3 h-28 w-full rounded-2xl object-cover" />
+          )}
+        </HubTile>
+        <HubTile href="/us/story" title={t.us.sections.story} preview={t.hub.story(summary.story, summary.latestStory)} Icon={BookHeart} accent="sand" />
+        <HubTile href="/us/playlist" title={t.us.sections.playlist} preview={t.hub.playlist(summary.playlist, summary.latestSong ? `${summary.latestSong.title} · ${summary.latestSong.artist}` : null)} Icon={Music2} accent="lavender" wide />
+      </Group>
+
+      <Group title={t.hub.groups.ahead}>
+        <HubTile href="/us/plans" title={t.us.sections.plans} preview={t.hub.plans(next ? `${itemTitle(next)} · ${whenLabel(next.daysAway)}` : null)} Icon={CalendarHeart} accent="peach" badge={next && next.daysAway <= 7 ? whenLabel(next.daysAway) : null} />
+        <HubTile href="/us/dreams" title={t.us.sections.dreams} preview={t.hub.dreams(summary.dreamsDone, summary.dreamsTotal)} Icon={ListChecks} accent="sage" />
+      </Group>
+
+      <Group title={t.hub.groups.gestures}>
+        <HubTile href="/us/questions" title={t.us.sections.questions} preview={t.hub.question(summary.answeredToday)} Icon={MessageCircleQuestion} accent="rose" badge={summary.answeredToday ? null : "•"} />
+        <HubTile href="/us/jar" title={t.us.sections.jar} preview={t.hub.jar(summary.reasonsMine, summary.reasonsTheirs)} Icon={Sparkles} accent="sand" badge={summary.reasonsTheirs > 0 ? String(summary.reasonsTheirs) : null} />
+        <HubTile href="/us/coupons" title={t.us.sections.coupons} preview={t.hub.coupons(summary.couponsForMe, summary.couponsFromMe)} Icon={Ticket} accent="peach" badge={summary.couponsForMe > 0 ? String(summary.couponsForMe) : null} />
+        <HubTile href="/us/open-when" title={t.us.sections.openWhen} preview={t.hub.openWhen(summary.openWhenForMe)} Icon={MailOpen} accent="lavender" badge={summary.openWhenForMe > 0 ? String(summary.openWhenForMe) : null} />
+      </Group>
+
+      <details className="mt-9 rounded-3xl border border-line p-5">
+        <summary className="cursor-pointer text-[15px] font-medium">{t.hub.together}</summary>
+        <div className="mt-4"><TogetherForm initial={ctx.space.togetherSince} today={today} /></div>
+      </details>
     </>
   );
 }

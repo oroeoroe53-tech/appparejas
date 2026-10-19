@@ -12,6 +12,7 @@ export interface InlineItem {
   type: MessageType;
   content: string;
   createdAt: string;
+  media?: { url: string; seconds: number | null };
 }
 
 /** Unread messages that need no ceremony, shown right on Home and marked read once they have been on screen. */
@@ -29,6 +30,7 @@ export function InlineMessages({ items, senderName }: { items: InlineItem[]; sen
           text={m.content}
           senderName={senderName}
           dateLabel={formatDateTime(m.createdAt)}
+          media={m.media}
           onOpened={() => void markReadAction(m.id)}
         />
       ))}

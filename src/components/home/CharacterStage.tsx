@@ -1,4 +1,6 @@
-import { UserRound } from "lucide-react";
+import { Maximize2, UserRound } from "lucide-react";
+import Link from "next/link";
+import { LocalClock } from "./LocalClock";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
 import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
@@ -26,12 +28,14 @@ export function CharacterStage({
   partnerMood,
   togetherSince,
   nowMs,
+  partnerTimezone,
 }: {
   partnerName: string;
   partnerConfig: unknown | null;
   partnerMood: MoodRow | null;
   togetherSince: string | null;
   nowMs: number;
+  partnerTimezone?: string | null;
 }) {
   const theirMood = freshMood(partnerMood, nowMs);
   const days = togetherSince ? daysTogether(togetherSince, new Date(nowMs)) : null;
@@ -51,7 +55,11 @@ export function CharacterStage({
               {theirMood && partnerMood ? t.mood.feels(partnerName, t.mood.labels[theirMood], agoLabel(partnerMood.updated_at, nowMs)) : t.mood.quiet(partnerName)}
             </p>
             {theirMood && partnerMood?.note && <p className="mx-auto mt-2 max-w-[28ch] text-sm italic">“{partnerMood.note}”</p>}
+            {partnerTimezone && <LocalClock timezone={partnerTimezone} name={partnerName} className="mt-1 text-xs text-muted" />}
             <p className="mt-3 text-[11px] text-muted">{t.character.tapHint}</p>
+            <Link href="/us/portrait" aria-label={t.portrait.open} className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-rose-soft px-3 py-1.5 text-xs text-cherry-deep">
+              <Maximize2 className="h-3.5 w-3.5" aria-hidden /> {t.portrait.open}
+            </Link>
           </>
         ) : (
           <>

@@ -13,6 +13,8 @@ export interface PushPayload {
   url: string;
   icon: string;
   badge: string;
+  /** Big picture (Android Chrome shows it; iOS ignores it). Only ever set by the server, only in full mode. */
+  image?: string;
 }
 
 export const PREVIEW_MAX_CHARS = 140;
@@ -30,6 +32,8 @@ export function buildMessagePayload(input: {
   senderName: string;
   content: string;
   previewMode: PreviewMode;
+  /** Short-lived signed link to a drawing, shown as the notification picture in full mode. */
+  imageUrl?: string;
 }): PushPayload {
   const base = { ...ICONS, tag: `message-${input.messageId}`, url: `/letters/${input.messageId}` };
   if (input.previewMode === "generic") {
@@ -49,7 +53,8 @@ export function buildMessagePayload(input: {
     default:
       body = truncate(input.content, PREVIEW_MAX_CHARS);
   }
-  return { ...base, title: input.senderName || brand.name, body };
+  const image = input.type === "drawing" && input.imageUrl?.startsWith("https://") ? { image: input.imageUrl } : {};
+  return { ...base, ...image, title: input.senderName || brand.name, body };
 }
 
 /** For gifts, reminders and other non-message events. Respects the same privacy choice. */
