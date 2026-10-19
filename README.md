@@ -2,6 +2,15 @@
 
 A private PWA for two people. Instead of chat bubbles, messages arrive as small digital gestures: a sealed envelope, a taped note, a beating heart, a hug in words, a secret that waits for the seal to break, or an old parchment letter with a red wax seal. Any message can carry a short song clip. Notifications are real Web Push (VAPID), not in-page toasts.
 
+## What it does
+
+- **Quick message:** type a line on Home, send, and it lands on their lock screen **with your words** (their notification privacy can be switched to a generic line in Settings).
+- **Thinking of you:** one tap, no words.
+- **Letters with ceremony:** Love Letter, Little Note, Heart Message, Hug in Words, Secret Message and Old Letter (parchment, quill, red wax seal). Any message can carry a **song clip** and can be **scheduled** as a time capsule that opens on a chosen morning.
+- **Voice notes and drawings.**
+- **Your person, drawn by you:** each of you builds a character of the other (CC0 Lorelei art, 48 hairstyles, glasses, beard, freckles…). It lives on your Home screen, breathes and blinks, shows their mood, and you can see how they drew you.
+- **Together:** days-together counter, plans and anniversaries with countdowns (plus automatic 100/200/365-day milestones), our story timeline with photos, albums, a daily question (answers unlock when you both reply), dreams and bucket list, love coupons, and a shared playlist.
+
 > The product name lives in one place: [`src/config/brand.ts`](src/config/brand.ts). All UI copy lives in [`src/content/en.ts`](src/content/en.ts) (swap `src/content/index.ts` to add a translation).
 
 ## Status at a glance
@@ -17,6 +26,10 @@ A private PWA for two people. Instead of chat bubbles, messages arrive as small 
 | Web Push send (VAPID + RFC 8291 encryption) | yes | **against a local HTTPS push-service stand-in** | VAPID keys, service-role key |
 | Push subscribe/unsubscribe, notification click → letter | yes | code reviewed; **not run on a real phone** | VAPID keys, HTTPS |
 | PWA manifest, service worker, offline page | yes | manifest/headers checked on a production server | HTTPS in production |
+| Quick message, ping, voice notes, drawings, time capsules | yes | DB rules on Postgres; UI against a **mock** API; **recording and audio never tried on a real phone** | – |
+| Characters, mood, days together, plans, story, daily question, dreams, coupons, playlist | yes | DB rules on Postgres; UI against a **mock** API | – |
+| Albums + private photo storage | yes | storage policies tested on Postgres with a stand-in for Supabase Storage; **never run against real Supabase Storage** | – |
+| Daily job (capsule delivery, reminders) | yes | secret check unit-tested; **job itself never run** | `CRON_SECRET`, Vercel Cron |
 | Production build, lint, typecheck | yes | all pass (see below) | – |
 
 Not verified: anything against a live Supabase project, real browser push services (FCM / Mozilla / Apple), iOS Home-Screen behaviour, or delivery on real devices. Treat those as "implemented, untested end-to-end" until you run the smoke test below.
@@ -75,13 +88,16 @@ Without Supabase variables the app still builds and starts, and redirects to a `
 | `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Reads push subscriptions / recipient preferences, deletes accounts |
 | `VAPID_PRIVATE_KEY` | **server only** | Signs push requests |
 | `VAPID_SUBJECT` | server | `mailto:` or `https:` contact for push services |
+| `CRON_SECRET` | **server only** | Long random string (16+ chars). Vercel Cron sends it to `/api/cron/daily`; without it the job refuses to run |
 
 `NEXT_PUBLIC_*` values are inlined at **build** time, so set them before `npm run build`. Never prefix a secret with `NEXT_PUBLIC_`. Nothing secret is committed; `.env*` is git-ignored except `.env.example`.
 
 ## Configure Supabase
 
 1. Create a project at supabase.com.
-2. **Schema:** apply the files in [`supabase/migrations/`](supabase/migrations/) **in order** (`20260101000000_init.sql`, then `20260102000000_old_letter_and_song.sql`) — paste each into the SQL editor, or with the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
+2. **Schema:** apply the files in [`supabase/migrations/`](supabase/migrations/) **in order** — paste each into the SQL editor, or use the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
+   - **Already applied the first two (`init`, `old_letter_and_song`)?** Paste just [`supabase/bundles/after-02.sql`](supabase/bundles/after-02.sql): it contains everything newer in one transaction (regenerate it with `npm run sql:bundle`).
+   - The bundle also creates the private **`couple-media`** storage bucket and its policies (needs the Storage service enabled, which is the Supabase default).
 3. **Auth → URL Configuration:** set *Site URL* to your `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to *Redirect URLs* (needed for email confirmation and password reset). Open those emailed links on the same device/browser that requested them (PKCE).
 4. **Auth → Providers → Email:** keep email/password on. Decide whether to require email confirmation (the app handles both). Set a sensible minimum password length (the app enforces 8).
 5. **Auth → Rate limits / SMTP:** the built-in mailer is heavily rate-limited; configure your own SMTP before real use.
@@ -114,6 +130,10 @@ Any Node host works; Vercel is the simplest.
 2. Set `NEXT_PUBLIC_SITE_URL` to the production origin and mirror it in Supabase Auth URL settings.
 3. Icons are committed (`npm run icons` rebuilds them from `scripts/generate-icons.mjs`).
 4. Smoke test with two real accounts (below).
+
+### Daily job (time capsules and reminders)
+
+[`vercel.json`](vercel.json) schedules `GET /api/cron/daily` once a day at 07:00 UTC (the most frequent schedule Vercel's free plan allows). It (1) sends the notification for time capsules that opened, and (2) announces today's and tomorrow's plans, anniversaries and milestones to both people. Set `CRON_SECRET` in Vercel, then redeploy. Capsules become visible at 06:00 UTC on the chosen date, so the notification arrives within about an hour.
 
 ### Two-account smoke test (run this once after deploying)
 
@@ -155,9 +175,14 @@ npm run build       # production build
 - Realtime updates are not implemented: new letters appear on next navigation/refresh/notification tap.
 - Avatars are an optional https link (no upload/storage yet).
 - Email recovery links use PKCE: open them on the same browser that requested them.
+- **Photos, voice notes and drawings** are private to the couple (storage policies + short-lived signed links) but, like letters, **not end-to-end encrypted**. Photos are resized on the device and lose location metadata before upload. Voice recording needs microphone permission and works in current Chrome/Safari; not tested on real devices here.
+- When the last person leaves or an account is deleted, files are removed through the Storage API; the other person keeps shared files if they stay. Provider backups may retain them for a while.
+- Time capsules open at 06:00 UTC on the chosen day regardless of time zone.
+- Daily question and reminders use UTC calendar days.
+- Characters use the open-source Lorelei style, so they resemble a person but are not a likeness from a photo.
 - Songs are 30-second previews only (see *Song clips*); no autoplay before the first tap.
 - English only for now (copy is centralised for translation).
 
 ## Pending / ideas
 
-Realtime inbox, avatar upload, background-sync outbox, Spanish translation, a SQL test for concurrent accept races, Playwright E2E against a real Supabase project, and reading push delivery receipts.
+Realtime inbox, uploading your own image as the character, avatar upload, shared calendar sync, background-sync outbox, Spanish translation, a SQL test for concurrent accept races, Playwright E2E against a real Supabase project, and reading push delivery receipts.

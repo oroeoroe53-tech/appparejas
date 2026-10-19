@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { t } from "@/content";
 import { dbErrorCode } from "@/lib/errors";
+import { isMediaPath } from "@/lib/media";
+import { removeMyFiles } from "@/server/media";
 import { createClient } from "@/lib/supabase/server";
 import { pushEvent } from "@/server/notify";
 import { getAppContext } from "@/server/queries";
@@ -68,9 +70,15 @@ export async function addStoryAction(_prev: FormState, formData: FormData): Prom
     const field = parsed.error.issues[0]?.path[0];
     return { error: field === "date" ? t.story.errors.date : field === "title" ? t.story.errors.title : t.story.errors.generic };
   }
+  const ctx = await getAppContext();
+  const rawPhoto = String(formData.get("photoPath") ?? "");
+  const photoPath = rawPhoto && ctx?.space && isMediaPath(rawPhoto, ctx.space.id, "story") ? rawPhoto : null;
   const supabase = await createClient();
-  const { error } = await supabase.from("timeline_entries").insert({ title: parsed.data.title, note: parsed.data.note, happened_on: parsed.data.date });
-  if (error) return { error: t.story.errors.generic };
+  const { error } = await supabase.from("timeline_entries").insert({ title: parsed.data.title, note: parsed.data.note, happened_on: parsed.data.date, photo_path: photoPath });
+  if (error) {
+    if (photoPath) await removeMyFiles([photoPath]).catch(() => undefined);
+    return { error: t.story.errors.generic };
+  }
   revalidatePath("/us/story");
   return { notice: t.common.saved };
 }
@@ -78,7 +86,10 @@ export async function addStoryAction(_prev: FormState, formData: FormData): Prom
 export async function deleteStoryAction(id: string): Promise<{ ok: boolean }> {
   if (!z.string().uuid().safeParse(id).success) return { ok: false };
   const supabase = await createClient();
+  const { data: entry } = await supabase.from("timeline_entries").select("photo_path").eq("id", id).maybeSingle();
   const { error } = await supabase.from("timeline_entries").delete().eq("id", id);
+  const photo = (entry as { photo_path: string | null } | null)?.photo_path;
+  if (!error && photo) await removeMyFiles([photo]).catch(() => undefined);
   revalidatePath("/us/story");
   return { ok: !error };
 }

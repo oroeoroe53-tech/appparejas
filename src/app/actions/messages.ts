@@ -3,14 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { MESSAGE_LIMITS } from "@/lib/message-types";
 import { dbErrorCode, sendErrorMessage } from "@/lib/errors";
-import { buildMessagePayload } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { reactionSchema, sendMessageSchema, uuidSchema } from "@/lib/validation";
 import { songInputSchema, type SongInput } from "@/lib/songs";
-import { sendPushToUser } from "@/server/push";
+import { notifyRecipient } from "@/server/deliver";
+import { removeMyFiles } from "@/server/media";
 import { lookupSong } from "@/server/songs";
-import type { Message, PreviewMode, PushStatus } from "@/lib/types";
+import type { Message } from "@/lib/types";
 
 export type SendResult =
   | { ok: true; messageId: string; push: "sent" | "skipped" | "failed" | "already_sent" | "scheduled" }
@@ -21,6 +20,8 @@ export async function sendMessageAction(input: {
   type: string;
   clientId: string;
   song?: SongInput | null;
+  /** Voice note / drawing already uploaded to the couple folder. */
+  attachment?: { path: string; seconds?: number | null } | null;
   /** ISO time for a time-capsule message. */
   deliverAt?: string | null;
 }): Promise<SendResult> {
@@ -57,10 +58,14 @@ export async function sendMessageAction(input: {
     p_type: parsed.data.type,
     p_client_id: parsed.data.clientId,
     p_song: pSong,
-    p_attachment: null,
+    p_attachment: input.attachment ? { path: input.attachment.path, seconds: input.attachment.seconds ?? null } : null,
     p_deliver_at: input.deliverAt ?? null,
   });
-  if (error || !data) return { ok: false, error: sendErrorMessage(dbErrorCode(error)) };
+  if (error || !data) {
+    // A failed send must not leave an orphaned upload behind.
+    if (input.attachment) await removeMyFiles([input.attachment.path]).catch(() => undefined);
+    return { ok: false, error: sendErrorMessage(dbErrorCode(error)) };
+  }
 
   const { message, is_new } = data as { message: Message; is_new: boolean };
   // A retry of an already-stored draft must never notify twice.
@@ -71,52 +76,6 @@ export async function sendMessageAction(input: {
   revalidatePath("/letters");
   revalidatePath("/home");
   return { ok: true, messageId: message.id, push };
-}
-
-async function notifyRecipient(message: Message): Promise<"sent" | "skipped" | "failed"> {
-  const admin = createAdminClient();
-  const setStatus = async (status: PushStatus) => {
-    await admin?.from("messages").update({ push_status: status }).eq("id", message.id);
-  };
-  if (!admin) {
-    return "skipped";
-  }
-  try {
-    const [{ data: prefs }, { data: sender }, { data: nick }] = await Promise.all([
-      admin.from("user_preferences").select("notifications_enabled, notification_preview_mode").eq("user_id", message.recipient_id).maybeSingle(),
-      admin.from("profiles").select("display_name").eq("id", message.sender_id).maybeSingle(),
-      // What the RECIPIENT calls the sender, so the lock screen reads like their own contact name.
-      admin.from("couple_members").select("partner_nickname").eq("user_id", message.recipient_id).maybeSingle(),
-    ]);
-    const enabled = (prefs as { notifications_enabled: boolean } | null)?.notifications_enabled ?? true;
-    if (!enabled) {
-      await setStatus("skipped");
-      return "skipped";
-    }
-    const previewMode = ((prefs as { notification_preview_mode: PreviewMode } | null)?.notification_preview_mode ?? "generic") as PreviewMode;
-    const payload = buildMessagePayload({
-      messageId: message.id,
-      type: message.message_type,
-      senderName: (nick as { partner_nickname: string | null } | null)?.partner_nickname || (sender as { display_name: string } | null)?.display_name || "",
-      content: message.content,
-      previewMode,
-    });
-    const outcome = await sendPushToUser(admin, message.recipient_id, payload);
-    if (outcome.status === "sent") {
-      await setStatus("sent");
-      return "sent";
-    }
-    if (outcome.status === "failed") {
-      await setStatus("failed");
-      return "failed";
-    }
-    await setStatus("skipped");
-    return "skipped";
-  } catch {
-    // The message itself is already stored; a notification problem must not turn the send into an error.
-    await setStatus("failed").catch(() => undefined);
-    return "failed";
-  }
 }
 
 export async function markReadAction(id: string): Promise<{ ok: boolean }> {

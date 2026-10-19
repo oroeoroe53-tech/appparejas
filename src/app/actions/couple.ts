@@ -8,6 +8,7 @@ import { dbErrorCode } from "@/lib/errors";
 import { formatInviteCode, parseInviteToken } from "@/lib/invite";
 import { createClient } from "@/lib/supabase/server";
 import { getAppContext } from "@/server/queries";
+import { purgeSpaceMedia } from "@/server/media";
 
 export type InviteResult =
   | { ok: true; url: string; code: string; expiresAt: string }
@@ -64,9 +65,13 @@ export async function leaveSpaceAction(_prev: { error?: string } | undefined, fo
   }
   const ctx = await getAppContext();
   if (!ctx?.space) return { error: t.settings.errors.generic };
+  // Whoever stays keeps the shared letters and files. Only when nobody stays must every file go.
+  const lastOne = ctx.space.status !== "active";
+  const spaceId = ctx.space.id;
   const supabase = await createClient();
   const { error } = await supabase.rpc("leave_space");
   if (error) return { error: t.settings.errors.generic };
+  if (lastOne) await purgeSpaceMedia(spaceId).catch(() => undefined);
   revalidatePath("/", "layout");
   redirect("/connect");
 }

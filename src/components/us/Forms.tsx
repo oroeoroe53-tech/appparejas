@@ -2,6 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import { addEventAction, addStoryAction, answerQuestionAction } from "@/app/actions/shared";
+import { StoryPhotoField } from "@/components/media/StoryPhotoField";
 import { Field } from "@/components/ui/Field";
 import { FormMessage } from "@/components/ui/Notice";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -44,7 +45,7 @@ export function EventForm({ today }: { today: string }) {
   );
 }
 
-export function StoryForm({ today }: { today: string }) {
+export function StoryForm({ today, spaceId }: { today: string; spaceId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action] = useActionState(async (prev: Parameters<typeof addStoryAction>[0], fd: FormData) => {
     const res = await addStoryAction(prev, fd);
@@ -57,6 +58,7 @@ export function StoryForm({ today }: { today: string }) {
       <Field label={t.story.titleLabel} name="title" maxLength={100} placeholder={t.story.titlePlaceholder} required />
       <Field label={t.story.dateLabel} name="date" type="date" defaultValue={today} min="1950-01-01" max={today} required />
       <TextArea name="note" label={t.story.noteLabel} maxLength={1000} rows={4} />
+      <StoryPhotoField key={state?.notice ?? "idle"} spaceId={spaceId} />
       <FormMessage error={state?.error} notice={state?.notice} />
       <SubmitButton pendingLabel={t.story.saving} className="w-full">{t.story.saveCta}</SubmitButton>
     </form>

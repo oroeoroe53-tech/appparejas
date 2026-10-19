@@ -242,3 +242,41 @@ export async function getPlaylist(): Promise<PlaylistRow[]> {
   const { data } = await supabase.from("playlist_songs").select("id, added_by, song_track_id, song_title, song_artist, song_preview_url, song_artwork_url, note").order("created_at", { ascending: false }).limit(300);
   return (data ?? []) as PlaylistRow[];
 }
+
+export interface AlbumRow {
+  id: string;
+  title: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface PhotoRow {
+  id: string;
+  album_id: string;
+  storage_path: string;
+  caption: string | null;
+  taken_on: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export async function getAlbums(): Promise<AlbumRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("albums").select("id, title, created_by, created_at").order("created_at", { ascending: false }).limit(200);
+  return (data ?? []) as AlbumRow[];
+}
+
+export async function getAlbum(id: string): Promise<AlbumRow | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.from("albums").select("id, title, created_by, created_at").eq("id", id).maybeSingle();
+  return (data as AlbumRow | null) ?? null;
+}
+
+export async function getPhotos(albumId?: string): Promise<PhotoRow[]> {
+  const supabase = await createClient();
+  let q = supabase.from("photos").select("id, album_id, storage_path, caption, taken_on, created_by, created_at").order("created_at", { ascending: false }).limit(500);
+  if (albumId) q = q.eq("album_id", albumId);
+  const { data } = await q;
+  return (data ?? []) as PhotoRow[];
+}

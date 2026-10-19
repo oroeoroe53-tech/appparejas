@@ -4,10 +4,12 @@ import type { MessageType } from "@/lib/message-types";
 import { HeartMessage } from "./HeartMessage";
 import { HugInWords } from "./HugInWords";
 import { LittleNote } from "./LittleNote";
+import { DrawingCard } from "./DrawingCard";
 import { LoveLetter } from "./LoveLetter";
 import { OldLetter } from "./OldLetter";
 import { QuickMessage } from "./QuickMessage";
 import { ThinkingOfYou } from "./ThinkingOfYou";
+import { VoiceNote } from "./VoiceNote";
 import { SecretMessage } from "./SecretMessage";
 import type { ExperienceProps } from "./shared";
 
@@ -20,9 +22,8 @@ const EXPERIENCES: Record<MessageType, (props: ExperienceProps) => React.ReactEl
   old_letter: OldLetter,
   quick: QuickMessage,
   thinking_of_you: ThinkingOfYou,
-  // Replaced by the real players when voice notes and drawings ship.
-  voice_note: QuickMessage,
-  drawing: QuickMessage,
+  voice_note: VoiceNote,
+  drawing: DrawingCard,
 };
 
 export function MessageExperience({ type, ...props }: ExperienceProps & { type: MessageType }) {

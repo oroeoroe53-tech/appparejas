@@ -1,8 +1,10 @@
 -- Minimal stand-ins for the Supabase-managed pieces so the migrations can run on plain Postgres.
 -- NOT part of the real deployment: Supabase provides these itself.
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin bypassrls;
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
+end $$;
 create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
@@ -27,6 +29,7 @@ create table storage.objects (
   bucket_id text references storage.buckets (id),
   name text not null,
   owner uuid default auth.uid(),
+  owner_id text default auth.uid()::text,
   created_at timestamptz default now(),
   unique (bucket_id, name)
 );

@@ -8,6 +8,7 @@ import { t } from "@/content";
 import { todayIso } from "@/lib/dates";
 import { formatDay } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
+import { signedUrls } from "@/server/media";
 import { getStory } from "@/server/queries";
 
 export const metadata: Metadata = { title: "Our story" };
@@ -16,10 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function StoryPage() {
   const ctx = await requireSpace();
   const entries = await getStory();
+  const urls = await signedUrls(entries.map((e) => e.photo_path ?? ""));
   return (
     <>
       <PageHeader title={t.story.title} subtitle={t.story.subtitle} />
-      <StoryForm today={todayIso(new Date())} />
+      <StoryForm today={todayIso(new Date())} spaceId={ctx.space.id} />
       {entries.length === 0 ? (
         <p className="mt-10 text-[15px] leading-relaxed text-muted">{t.story.empty}</p>
       ) : (
@@ -34,6 +36,10 @@ export default async function StoryPage() {
                 </div>
                 {e.created_by === ctx.user.id && <DeleteButton action={deleteStoryAction} id={e.id} label={t.story.remove} confirmLabel={t.story.removeConfirm} />}
               </div>
+              {e.photo_path && urls[e.photo_path] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={urls[e.photo_path]} alt={e.title} loading="lazy" className="mt-3 max-h-80 w-full rounded-2xl object-cover" />
+              )}
               {e.note && <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-muted">{e.note}</p>}
             </li>
           ))}

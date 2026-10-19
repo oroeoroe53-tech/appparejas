@@ -14,6 +14,8 @@ export interface ExperienceProps {
   onOpened?: () => void;
   /** Fires synchronously inside the reader's tap that starts the opening (a valid moment to start audio). */
   onOpenStart?: () => void;
+  /** Signed link and length of a voice note or drawing. */
+  media?: { url: string; seconds: number | null };
 }
 
 export const EASE = [0.22, 1, 0.36, 1] as const;

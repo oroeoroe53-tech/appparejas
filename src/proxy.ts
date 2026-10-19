@@ -12,6 +12,9 @@ function isPublic(pathname: string) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Scheduled jobs authenticate with their own secret (checked in the route), not with a user session.
+  if (pathname.startsWith("/api/cron/")) return NextResponse.next();
+
   if (!isSupabaseConfigured()) {
     if (pathname === "/setup" || pathname === "/offline" || pathname.startsWith("/dev") || pathname === "/welcome") {
       return NextResponse.next();

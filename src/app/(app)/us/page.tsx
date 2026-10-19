@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BookHeart, CalendarHeart, ListChecks, MessageCircleQuestion, Music2, Ticket } from "lucide-react";
+import { BookHeart, CalendarHeart, Images, ListChecks, MessageCircleQuestion, Music2, Ticket } from "lucide-react";
 import Link from "next/link";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
 import { TogetherForm } from "@/components/us/TogetherForm";
@@ -34,6 +34,7 @@ export default async function UsPage() {
           </span>
         </Link>
         {[
+          { href: "/us/albums", Icon: Images, title: t.us.sections.albums, hint: t.us.sections.albumsHint },
           { href: "/us/plans", Icon: CalendarHeart, title: t.us.sections.plans, hint: t.us.sections.plansHint },
           { href: "/us/story", Icon: BookHeart, title: t.us.sections.story, hint: t.us.sections.storyHint },
           { href: "/us/questions", Icon: MessageCircleQuestion, title: t.us.sections.questions, hint: t.us.sections.questionsHint },

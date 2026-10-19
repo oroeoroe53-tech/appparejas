@@ -31,4 +31,10 @@ for f in "$ROOT"/supabase/tests/[1-9]*_*.test.sql; do
   if ! out=$(run_file "$f" 2>&1); then echo "$out"; echo "DB tests FAILED"; exit 1; fi
   echo "$out" | grep -E "NOTICE:  ok - " | sed -E 's/^.*NOTICE:  /  /'
 done
+# The pasteable bundle must produce a working schema when applied after migrations 01 and 02.
+$PSQL -d postgres -c "create database app_bundle" >/dev/null
+$PSQL -d app_bundle -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
+for f in "$ROOT"/supabase/migrations/20260101*.sql "$ROOT"/supabase/migrations/20260102*.sql; do $PSQL -d app_bundle -f "$f" >/dev/null; done
+$PSQL -d app_bundle -f "$ROOT/supabase/bundles/after-02.sql" >/dev/null
+echo "  ok - the SQL bundle applies cleanly after migrations 01 and 02"
 echo "DB tests passed"

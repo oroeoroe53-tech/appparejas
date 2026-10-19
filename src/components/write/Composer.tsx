@@ -10,6 +10,7 @@ import { TypeGlyph } from "@/components/letters/TypeGlyph";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
+import { SchedulePicker, scheduleToIso } from "./SchedulePicker";
 import { SongPicker } from "@/components/songs/SongPicker";
 import { SongPlayer, type SongPlayerHandle } from "@/components/songs/SongPlayer";
 import { isAppleArtworkUrl, isApplePreviewUrl, type SongClip } from "@/lib/songs";
@@ -18,8 +19,8 @@ import { isLetterStyle, LETTER_STYLES, MESSAGE_LIMITS, type LetterStyle } from "
 import { useIsClient, useOnline } from "@/lib/use-client";
 import { cn } from "@/lib/utils";
 
-type Step = "write" | "style" | "preview" | "sent";
-const STEPS: Exclude<Step, "sent">[] = ["write", "style", "preview"];
+type Step = "write" | "style" | "preview";
+const STEPS: Step[] = ["write", "style", "preview"];
 const DRAFT_KEY = "us-draft-v1";
 
 interface Draft {
@@ -67,6 +68,8 @@ interface ComposerProps {
   senderName: string;
   partnerName: string;
   isReply: boolean;
+  minDate: string;
+  onSent: (result: Extract<SendResult, { ok: true }>) => void;
 }
 
 /** Drafts live in localStorage, so the editor only mounts on the client (avoids hydration mismatches). */
@@ -76,7 +79,7 @@ export function Composer(props: ComposerProps) {
   return <ComposerEditor {...props} />;
 }
 
-function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
+function ComposerEditor({ senderName, partnerName, isReply, minDate, onSent }: ComposerProps) {
   const [draft] = useState(loadDraft);
   const [step, setStep] = useState<Step>("write");
   const [text, setText] = useState(draft?.text ?? "");
@@ -87,15 +90,15 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
   const [previewKey, setPreviewKey] = useState(0);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string>();
-  const [result, setResult] = useState<Extract<SendResult, { ok: true }> | null>(null);
+  const [capsule, setCapsule] = useState<string | null>(null);
   const online = useOnline();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const lock = useRef(false);
   const editor = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (step !== "sent") saveDraft({ text, type, clientId, song });
-  }, [text, type, clientId, song, step]);
+    saveDraft({ text, type, clientId, song });
+  }, [text, type, clientId, song]);
 
   const maxChars = MESSAGE_LIMITS[type];
   const length = Array.from(text).length;
@@ -119,11 +122,10 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
     setSending(true);
     setError(undefined);
     try {
-      const res = await sendMessageAction({ content: text, type, clientId, song: song ? { trackId: song.trackId, start: song.start, duration: song.duration } : null });
+      const res = await sendMessageAction({ content: text, type, clientId, song: song ? { trackId: song.trackId, start: song.start, duration: song.duration } : null, deliverAt: capsule ? scheduleToIso(capsule) : null });
       if (res.ok) {
         saveDraft(null);
-        setResult(res);
-        setStep("sent");
+        onSent(res);
       } else {
         setError(res.error);
       }
@@ -134,7 +136,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
       lock.current = false;
       setSending(false);
     }
-  }, [clientId, song, text, tooLong, trimmedEmpty, type]);
+  }, [capsule, clientId, onSent, song, text, tooLong, trimmedEmpty, type]);
 
   function discard() {
     saveDraft(null);
@@ -146,17 +148,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
     editor.current?.focus();
   }
 
-  function another() {
-    setText("");
-    setSong(null);
-    setClientId(newId());
-    setResult(null);
-    setStep("write");
-  }
-
-  if (step === "sent" && result) return <Sent partnerName={partnerName} push={result.push} onAnother={another} />;
-
-  const stepIndex = STEPS.indexOf(step as Exclude<Step, "sent">);
+  const stepIndex = STEPS.indexOf(step);
   return (
     <div>
       <ol className="mb-6 flex items-center gap-2 text-xs" aria-label="Progress">
@@ -267,6 +259,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
                 <Button variant="ghost" className="min-h-10 px-4" onClick={() => go("write")}>{t.write.editMessage}</Button>
                 <Button variant="ghost" className="min-h-10 px-4" onClick={() => go("style")}>{t.write.editStyle}</Button>
               </div>
+              <div className="mt-5"><SchedulePicker value={capsule} onChange={setCapsule} minDate={minDate} /></div>
               <FormMessage error={error} className="mt-4" />
               <Button className="mt-6 w-full" onClick={send} disabled={sending || !online || trimmedEmpty || tooLong} aria-busy={sending}>
                 {sending ? (<><Spinner /> {t.write.sending}</>) : (<><Send className="h-4 w-4" aria-hidden /> {t.write.send}</>)}
@@ -280,8 +273,8 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
   );
 }
 
-function Sent({ partnerName, push, onAnother }: { partnerName: string; push: Extract<SendResult, { ok: true }>["push"]; onAnother: () => void }) {
-  const pushLine = push === "sent" ? t.write.pushSent : push === "failed" ? t.write.pushFailed : push === "skipped" ? t.write.pushSkipped : null;
+export function SentView({ partnerName, push, onAnother }: { partnerName: string; push: Extract<SendResult, { ok: true }>["push"]; onAnother: () => void }) {
+  const pushLine = push === "sent" ? t.write.pushSent : push === "failed" ? t.write.pushFailed : push === "skipped" ? t.write.pushSkipped : push === "scheduled" ? t.write.pushScheduled : null;
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center pt-10 text-center" role="status">
       <div className="relative grid h-32 w-32 place-items-center">

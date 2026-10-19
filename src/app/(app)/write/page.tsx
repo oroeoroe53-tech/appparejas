@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Composer } from "@/components/write/Composer";
+import { WriteHub } from "@/components/write/WriteHub";
+import { tomorrowIso } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
@@ -15,7 +16,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title={t.home.writeTo(partnerName)} />
-      <Composer senderName={ctx.profile.display_name} partnerName={partnerName} isReply={Boolean(sp.reply)} />
+      <WriteHub spaceId={ctx.space.id} senderName={ctx.profile.display_name} partnerName={partnerName} isReply={Boolean(sp.reply)} minDate={tomorrowIso(new Date())} />
     </>
   );
 }

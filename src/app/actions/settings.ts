@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { profileSchema } from "@/lib/validation";
 import { getAppContext } from "@/server/queries";
+import { purgeSpaceMedia, purgeUserMedia } from "@/server/media";
 import type { FormState } from "./types";
 
 export async function updateProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -69,6 +70,11 @@ export async function deleteAccountAction(_prev: { error?: string } | undefined,
   const ctx = await getAppContext();
   const admin = createAdminClient();
   if (!ctx || !admin) return { error: t.settings.errors.generic };
+  // Storage files are not covered by database cascades, so remove them first.
+  const spaceId = ctx.space?.id;
+  const lastOne = !ctx.space || ctx.space.status !== "active";
+  await purgeUserMedia(ctx.user.id).catch(() => undefined);
+  if (spaceId && lastOne) await purgeSpaceMedia(spaceId).catch(() => undefined);
   // The user id comes from the verified session, never from the request.
   const { error } = await admin.auth.admin.deleteUser(ctx.user.id);
   if (error) return { error: t.settings.errors.generic };

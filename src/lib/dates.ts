@@ -9,6 +9,8 @@ export const fromDayNumber = (n: number): string => new Date(n * DAY_MS).toISOSt
 
 export const todayIso = (now: Date): string => now.toISOString().slice(0, 10);
 
+export const tomorrowIso = (now: Date): string => fromDayNumber(toDayNumber(todayIso(now)) + 1);
+
 const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
 /** The yearly repeat of `iso` that falls in `year` (29 Feb becomes 28 Feb in common years). */
