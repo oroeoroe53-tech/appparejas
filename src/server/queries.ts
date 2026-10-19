@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isCeremony } from "@/lib/message-types";
 import type { Mood } from "@/lib/character-options";
+import type { EventRow } from "@/lib/dates";
 import type { Message, Preferences, Profile, SpaceContext } from "@/lib/types";
 
 export const getUser = cache(async () => {
@@ -150,4 +151,44 @@ export async function getCharacters(userId: string): Promise<{ mine: unknown | n
     mine: rows.find((r) => r.designer_id === userId)?.config ?? null,
     theirs: rows.find((r) => r.designer_id !== userId)?.config ?? null,
   };
+}
+
+export async function getEvents(): Promise<Array<EventRow & { created_by: string }>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("couple_events").select("id, title, note, event_date, repeat_yearly, kind, created_by").order("event_date", { ascending: true }).limit(500);
+  return (data ?? []) as Array<EventRow & { created_by: string }>;
+}
+
+export interface StoryRow {
+  id: string;
+  title: string;
+  note: string | null;
+  happened_on: string;
+  photo_path: string | null;
+  created_by: string;
+}
+
+export async function getStory(): Promise<StoryRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("timeline_entries").select("id, title, note, happened_on, photo_path, created_by").order("happened_on", { ascending: false }).limit(500);
+  return (data ?? []) as StoryRow[];
+}
+
+export interface AnswerRow {
+  day: string;
+  user_id: string;
+  answer: string;
+}
+
+/** Answers visible to me: my own, plus my partner's for days I have also answered. */
+export async function getAnswers(limit = 120): Promise<AnswerRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("question_answers").select("day, user_id, answer").order("day", { ascending: false }).limit(limit);
+  return (data ?? []) as AnswerRow[];
+}
+
+export async function partnerAnswered(day: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("partner_has_answered", { p_day: day });
+  return data === true;
 }

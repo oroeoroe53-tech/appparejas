@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NextUp } from "@/components/home/NextUp";
+import { QuestionCard } from "@/components/us/Forms";
+import { questionForDay } from "@/content/questions";
+import { toDayNumber, todayIso, upcoming } from "@/lib/dates";
 import { MoodPicker } from "@/components/character/MoodPicker";
 import { CharacterStage, freshMood } from "@/components/home/CharacterStage";
 import { InlineMessages } from "@/components/home/InlineMessages";
@@ -12,19 +16,26 @@ import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
 import { dayPart, formatTime, formatToday } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getCharacters, getLetters, getMoods, getUnreadLetters, partnerLabel } from "@/server/queries";
+import { getAnswers, getCharacters, getEvents, getLetters, getMoods, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "For you" };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const ctx = await requireSpace({ allowEnded: true });
-  const [unread, recent, moods, characters] = await Promise.all([
+  const today = todayIso(new Date());
+  const [unread, recent, moods, characters, events, answers, theyAnswered] = await Promise.all([
     getUnreadLetters(ctx.user.id),
     getLetters(ctx.user.id, { filter: "all", query: "", limit: 4 }),
     getMoods(),
     getCharacters(ctx.user.id),
+    getEvents(),
+    getAnswers(4),
+    partnerAnswered(today),
   ]);
+  const comingUp = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 45 });
+  const myAnswer = answers.find((a) => a.day === today && a.user_id === ctx.user.id)?.answer ?? null;
+  const theirAnswer = answers.find((a) => a.day === today && a.user_id !== ctx.user.id)?.answer ?? null;
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const now = new Date();
   const sealedUnread = unread.filter((m) => isCeremony(m.message_type));
@@ -98,6 +109,13 @@ export default async function HomePage() {
         )}
       </section>
 
+
+      {!ended && (
+        <div className="mt-8 space-y-4">
+          <QuestionCard question={questionForDay(toDayNumber(today))} partnerName={partnerName} myAnswer={myAnswer} partnerAnswer={theirAnswer} partnerAnswered={theyAnswered} />
+          <NextUp items={comingUp} />
+        </div>
+      )}
 
       <div className="mt-8">
         <MoodPicker current={freshMood(moods.find((m) => m.user_id === ctx.user.id) ?? null, now.getTime())} />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BookHeart, CalendarHeart, MessageCircleQuestion } from "lucide-react";
 import Link from "next/link";
 import { CharacterFigure } from "@/components/character/CharacterFigure";
 import { TogetherForm } from "@/components/us/TogetherForm";
@@ -32,6 +33,19 @@ export default async function UsPage() {
             <span className="block text-sm text-muted">{t.us.sections.characterHint}</span>
           </span>
         </Link>
+        {[
+          { href: "/us/plans", Icon: CalendarHeart, title: t.us.sections.plans, hint: t.us.sections.plansHint },
+          { href: "/us/story", Icon: BookHeart, title: t.us.sections.story, hint: t.us.sections.storyHint },
+          { href: "/us/questions", Icon: MessageCircleQuestion, title: t.us.sections.questions, hint: t.us.sections.questionsHint },
+        ].map(({ href, Icon, title, hint }) => (
+          <Link key={href} href={href} className="flex items-center gap-4 rounded-3xl bg-paper p-4 shadow-soft transition active:scale-[0.99]">
+            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-rose-soft text-cherry"><Icon className="h-7 w-7" aria-hidden /></span>
+            <span>
+              <span className="block font-serif text-lg">{title}</span>
+              <span className="block text-sm text-muted">{hint}</span>
+            </span>
+          </Link>
+        ))}
         <section className="rounded-3xl border border-line p-5">
           <TogetherForm initial={ctx.space.togetherSince} today={new Date().toISOString().slice(0, 10)} />
         </section>
