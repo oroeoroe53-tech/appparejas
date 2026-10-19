@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, publicEnv } from "@/lib/env";
+import { currentUser } from "@/lib/supabase/auth";
 
 /** Routes reachable without a session. Everything else requires one. */
 const PUBLIC_PREFIXES = ["/welcome", "/login", "/register", "/forgot-password", "/auth", "/offline", "/setup", "/join", "/dev"];
@@ -34,20 +35,20 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // getUser() validates the token with the auth server; never trust the cookie alone.
-  const { data } = await supabase.auth.getUser();
+  // The token signature is verified locally (no network round trip); the cookie alone is never trusted.
+  const user = await currentUser(supabase);
 
-  if (!data.user && pathname.startsWith("/api/")) {
+  if (!user && pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!data.user && !isPublic(pathname)) {
+  if (!user && !isPublic(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
     url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
-  if (data.user && (pathname === "/login" || pathname === "/register")) {
+  if (user && (pathname === "/login" || pathname === "/register")) {
     return NextResponse.redirect(new URL("/home", request.url));
   }
   return response;

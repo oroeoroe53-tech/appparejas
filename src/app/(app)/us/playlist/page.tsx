@@ -13,9 +13,8 @@ export const metadata: Metadata = { title: "Our playlist" };
 export const dynamic = "force-dynamic";
 
 export default async function PlaylistPage() {
-  const ctx = await requireSpace();
+  const [ctx, songs] = await Promise.all([requireSpace(), getPlaylist()]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
-  const songs = await getPlaylist();
   return (
     <>
       <PageHeader title={t.playlist.title} subtitle={t.playlist.subtitle} />

@@ -85,6 +85,5 @@ export async function setTimezoneAction(tz: string): Promise<{ ok: boolean }> {
   if (!/^[A-Za-z0-9_+/-]{1,64}$/.test(tz)) return { ok: false };
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_my_timezone", { p_tz: tz });
-  if (!error) revalidatePath("/", "layout");
   return { ok: !error };
 }

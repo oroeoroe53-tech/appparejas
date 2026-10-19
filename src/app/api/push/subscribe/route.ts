@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sameOrigin } from "@/lib/same-origin";
+import { currentUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { pushEndpointSchema, pushSubscriptionSchema } from "@/lib/validation";
 
@@ -9,8 +10,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await currentUser(supabase);
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { error } = await supabase.rpc("register_push_subscription", {
     p_endpoint: parsed.data.endpoint,
@@ -28,8 +29,8 @@ export async function DELETE(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await currentUser(supabase);
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { error } = await supabase.rpc("remove_push_subscription", { p_endpoint: parsed.data.endpoint });
   if (error) return NextResponse.json({ error: "failed" }, { status: 500 });

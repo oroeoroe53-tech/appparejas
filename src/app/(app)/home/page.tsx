@@ -17,20 +17,24 @@ import { TypeGlyph } from "@/components/letters/TypeGlyph";
 import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
 import { dayPart, formatTime, formatToday } from "@/lib/utils";
+import { redirect } from "next/navigation";
 import { requireSpace } from "@/server/guards";
-import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getReasons, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
+import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getReasons, getUnreadLetters, getUser, partnerAnswered, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "For you" };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const ctx = await requireSpace({ allowEnded: true });
+  const user = await getUser();
+  if (!user) redirect("/login");
   const today = todayIso(new Date());
-  const [unread, recent, moods, characters, events, answers, theyAnswered, coupons, reasons] = await Promise.all([
-    getUnreadLetters(ctx.user.id),
-    getLetters(ctx.user.id, { filter: "all", query: "", limit: 4 }),
+  // Everything below needs only the user id, so it all travels in ONE wave together with the space check.
+  const [ctx, unread, recent, moods, characters, events, answers, theyAnswered, coupons, reasons] = await Promise.all([
+    requireSpace({ allowEnded: true }),
+    getUnreadLetters(user.id),
+    getLetters(user.id, { filter: "all", query: "", limit: 4 }),
     getMoods(),
-    getCharacters(ctx.user.id),
+    getCharacters(user.id),
     getEvents(),
     getAnswers(4),
     partnerAnswered(today),

@@ -28,9 +28,8 @@ function Ticket({ coupon, caption, children }: { coupon: CouponRow; caption: str
 }
 
 export default async function CouponsPage() {
-  const ctx = await requireSpace();
+  const [ctx, coupons] = await Promise.all([requireSpace(), getCoupons()]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
-  const coupons = await getCoupons();
   const mine = coupons.filter((c) => c.receiver_id === ctx.user.id);
   const given = coupons.filter((c) => c.giver_id === ctx.user.id);
   return (

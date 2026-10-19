@@ -7,12 +7,13 @@ import { HubTile } from "@/components/us/HubTile";
 import { TogetherForm } from "@/components/us/TogetherForm";
 import { itemTitle, whenLabel } from "@/components/us/labels";
 import { t } from "@/content";
-import { renderFrames } from "@/lib/character";
+import { renderStill } from "@/lib/character";
 import { todayIso, upcoming } from "@/lib/dates";
 import { daysTogether } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { signedUrls } from "@/server/media";
-import { getCharacters, getEvents, getHubSummary, partnerLabel } from "@/server/queries";
+import { redirect } from "next/navigation";
+import { getCharacters, getEvents, getHubSummary, getUser, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "Us" };
 export const dynamic = "force-dynamic";
@@ -27,11 +28,12 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export default async function UsPage() {
-  const ctx = await requireSpace({ allowEnded: true });
-  const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
+  const user = await getUser();
+  if (!user) redirect("/login");
   const now = new Date();
   const today = todayIso(now);
-  const [{ mine, theirs }, summary, events] = await Promise.all([getCharacters(ctx.user.id), getHubSummary(ctx.user.id, today), getEvents()]);
+  const [ctx, { mine, theirs }, summary, events] = await Promise.all([requireSpace({ allowEnded: true }), getCharacters(user.id), getHubSummary(user.id, today), getEvents()]);
+  const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const covers = await signedUrls([summary.albumCoverPath ?? ""]);
   const cover = summary.albumCoverPath ? covers[summary.albumCoverPath] : undefined;
   const next = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 365 })[0];
@@ -46,7 +48,7 @@ export default async function UsPage() {
         <div className="relative flex items-center justify-center">
           <div className="-mr-3 text-center">
             {mine ? (
-              <CharacterFigure frames={renderFrames(mine)} label={t.character.previewAlt(partnerName)} className="h-28 w-28" interactive={false} />
+              <CharacterFigure frames={renderStill(mine)} label={t.character.previewAlt(partnerName)} className="h-28 w-28" interactive={false} />
             ) : (
               <span className="grid h-28 w-28 place-items-center rounded-full border-2 border-dashed border-rose text-3xl text-rose" aria-hidden>+</span>
             )}
@@ -54,7 +56,7 @@ export default async function UsPage() {
           </div>
           <div className="-ml-3 text-center">
             {theirs ? (
-              <CharacterFigure frames={renderFrames(theirs)} label={t.character.previewAlt(ctx.profile.display_name)} className="h-28 w-28" interactive={false} />
+              <CharacterFigure frames={renderStill(theirs)} label={t.character.previewAlt(ctx.profile.display_name)} className="h-28 w-28" interactive={false} />
             ) : (
               <span className="grid h-28 w-28 place-items-center rounded-full border-2 border-dashed border-line text-3xl text-stone" aria-hidden>?</span>
             )}

@@ -13,8 +13,7 @@ export const metadata: Metadata = { title: "Dreams" };
 export const dynamic = "force-dynamic";
 
 export default async function DreamsPage() {
-  const ctx = await requireSpace();
-  const dreams = await getDreams();
+  const [ctx, dreams] = await Promise.all([requireSpace(), getDreams()]);
   const todo = dreams.filter((d) => !d.done);
   const done = dreams.filter((d) => d.done);
   const row = (d: (typeof dreams)[number]) => (

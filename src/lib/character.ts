@@ -61,3 +61,9 @@ export function renderFrames(raw: unknown, mood: Expression = "neutral"): Charac
     joy: renderCharacterSvg(raw, "joy"),
   };
 }
+
+/** For figures that never animate (lists, the Us header): one render instead of three. */
+export function renderStill(raw: unknown, mood: Expression = "neutral"): CharacterFrames {
+  const svg = renderCharacterSvg(raw, mood);
+  return { neutral: svg, blink: svg, joy: svg };
+}

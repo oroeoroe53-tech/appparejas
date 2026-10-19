@@ -15,8 +15,7 @@ export const metadata: Metadata = { title: "Our story" };
 export const dynamic = "force-dynamic";
 
 export default async function StoryPage() {
-  const ctx = await requireSpace();
-  const entries = await getStory();
+  const [ctx, entries] = await Promise.all([requireSpace(), getStory()]);
   const urls = await signedUrls(entries.map((e) => e.photo_path ?? ""));
   return (
     <>

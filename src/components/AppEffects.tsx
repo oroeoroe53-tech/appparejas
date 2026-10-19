@@ -22,7 +22,11 @@ export function AppEffects({ theme, pushWanted, unread, timezone }: { theme: The
   useEffect(() => {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz && tz !== timezone) void setTimezoneAction(tz);
+      if (!tz || tz === timezone) return;
+      // Ask at most once per browser session, even if the server declines the name.
+      if (sessionStorage.getItem("us-tz-sent") === tz) return;
+      sessionStorage.setItem("us-tz-sent", tz);
+      void setTimezoneAction(tz);
     } catch {
       // Time zone unavailable: nothing to share.
     }

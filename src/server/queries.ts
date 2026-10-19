@@ -1,15 +1,15 @@
 import "server-only";
 import { cache } from "react";
+import { currentUser, type SessionUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isCeremony } from "@/lib/message-types";
 import type { Mood } from "@/lib/character-options";
 import type { EventRow } from "@/lib/dates";
 import type { Message, Preferences, Profile, SpaceContext } from "@/lib/types";
 
-export const getUser = cache(async () => {
+export const getUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  return currentUser(supabase);
 });
 
 export interface AppContext {
@@ -26,16 +26,18 @@ export const getAppContext = cache(async (): Promise<AppContext | null> => {
   if (!user) return null;
   const supabase = await createClient();
 
-  const [profileRes, prefsRes, membersRes, spaceRes] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, avatar_url, timezone").eq("id", user.id).maybeSingle(),
+  // One round trip: RLS lets me read my own profile and my partner's, so both come back together.
+  const [profilesRes, prefsRes, membersRes, spaceRes] = await Promise.all([
+    supabase.from("profiles").select("id, display_name, avatar_url, timezone"),
     supabase.from("user_preferences").select("notifications_enabled, notification_preview_mode, theme").eq("user_id", user.id).maybeSingle(),
     supabase.from("couple_members").select("couple_space_id, user_id, partner_nickname, joined_at"),
     supabase.from("couple_spaces").select("id, status, together_since").maybeSingle(),
   ]);
 
-  const profile: Profile = (profileRes.data as Profile | null) ?? {
+  const profiles = (profilesRes.data ?? []) as Profile[];
+  const profile: Profile = profiles.find((p) => p.id === user.id) ?? {
     id: user.id,
-    display_name: user.email?.split("@")[0] ?? "Me",
+    display_name: user.email?.split("@")[0] || "Me",
     avatar_url: null,
   };
   const preferences = (prefsRes.data as Preferences | null) ?? DEFAULT_PREFS;
@@ -47,17 +49,12 @@ export const getAppContext = cache(async (): Promise<AppContext | null> => {
 
   let space: SpaceContext | null = null;
   if (me && spaceRow) {
-    let partner: Profile | null = null;
-    if (other) {
-      const { data } = await supabase.from("profiles").select("id, display_name, avatar_url, timezone").eq("id", other.user_id).maybeSingle();
-      partner = (data as Profile | null) ?? null;
-    }
     space = {
       id: spaceRow.id,
       status: spaceRow.status,
       joinedAt: me.joined_at,
       partnerNickname: me.partner_nickname,
-      partner,
+      partner: other ? (profiles.find((p) => p.id === other.user_id) ?? null) : null,
       partnerJoinedAt: other?.joined_at ?? null,
       togetherSince: spaceRow.together_since,
     };
@@ -104,7 +101,7 @@ export async function getLetters(
 export type UnreadItem = Pick<Message, "id" | "message_type" | "created_at" | "sender_id" | "sort_at" | "attachment_path" | "attachment_seconds"> & { content: string };
 
 /** Unread messages for the recipient. Text is included only for styles that need no opening ceremony. */
-export async function getUnreadLetters(userId: string): Promise<UnreadItem[]> {
+export const getUnreadLetters = cache(async (userId: string): Promise<UnreadItem[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
@@ -114,7 +111,7 @@ export async function getUnreadLetters(userId: string): Promise<UnreadItem[]> {
     .order("sort_at", { ascending: false })
     .limit(30);
   return ((data ?? []) as UnreadItem[]).map((m) => (isCeremony(m.message_type) ? { ...m, content: "" } : m));
-}
+});
 
 export async function getLetter(id: string): Promise<Message | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
@@ -333,52 +330,40 @@ export interface HubSummary {
   answeredToday: boolean;
 }
 
-/** Small live previews for the tiles on the Us screen. */
+/** Small live previews for the tiles on the Us screen: nine small queries, all in one parallel wave. */
 export async function getHubSummary(userId: string, today: string): Promise<HubSummary> {
   const supabase = await createClient();
-  const count = async (table: string, filter?: (q: any) => any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    let q: any = supabase.from(table).select("id", { count: "exact", head: true }); // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (filter) q = filter(q);
-    const { count: n } = await q;
-    return (n as number | null) ?? 0;
-  };
-  const [albums, story, playlist, dreamsDone, dreamsTotal, couponsForMe, couponsFromMe, reasonsMine, reasonsAll, openWhenForMe, latestAlbum, latestStory, latestSong, answered] = await Promise.all([
-    count("albums"),
-    count("timeline_entries"),
-    count("playlist_songs"),
-    count("dreams", (q) => q.eq("done", true)),
-    count("dreams"),
-    count("coupons", (q) => q.eq("receiver_id", userId).eq("status", "available")),
-    count("coupons", (q) => q.eq("giver_id", userId).eq("status", "available")),
-    count("reasons", (q) => q.eq("created_by", userId)),
-    count("reasons"),
-    count("open_when_letters", (q) => q.eq("recipient_id", userId).is("opened_at", null)),
-    supabase.from("albums").select("id").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("timeline_entries").select("title").order("happened_on", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("playlist_songs").select("song_title, song_artist, song_artwork_url").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("question_answers").select("day", { count: "exact", head: true }).eq("user_id", userId).eq("day", today),
+  const [albums, story, playlist, dreams, coupons, reasons, openWhen, answered, cover] = await Promise.all([
+    supabase.from("albums").select("id").limit(200),
+    supabase.from("timeline_entries").select("title").order("happened_on", { ascending: false }).limit(500),
+    supabase.from("playlist_songs").select("song_title, song_artist, song_artwork_url").order("created_at", { ascending: false }).limit(300),
+    supabase.from("dreams").select("done").limit(500),
+    supabase.from("coupons").select("giver_id, receiver_id, status").limit(500),
+    supabase.from("reasons").select("created_by").limit(500),
+    supabase.from("open_when_letters").select("recipient_id, opened_at").limit(100),
+    supabase.from("question_answers").select("day").eq("user_id", userId).eq("day", today).limit(1),
+    supabase.from("photos").select("storage_path").order("created_at", { ascending: false }).limit(1),
   ]);
-  let albumCoverPath: string | null = null;
-  const albumId = (latestAlbum.data as { id: string } | null)?.id;
-  if (albumId) {
-    const { data } = await supabase.from("photos").select("storage_path").eq("album_id", albumId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-    albumCoverPath = (data as { storage_path: string } | null)?.storage_path ?? null;
-  }
-  const song = latestSong.data as { song_title: string; song_artist: string; song_artwork_url: string | null } | null;
+  const rows = <T,>(r: { data: unknown }) => (r.data ?? []) as T[];
+  const songs = rows<{ song_title: string; song_artist: string; song_artwork_url: string | null }>(playlist);
+  const dreamRows = rows<{ done: boolean }>(dreams);
+  const couponRows = rows<{ giver_id: string; receiver_id: string; status: string }>(coupons);
+  const reasonRows = rows<{ created_by: string }>(reasons);
+  const reasonsMine = reasonRows.filter((r) => r.created_by === userId).length;
   return {
-    albums,
-    albumCoverPath,
-    story,
-    latestStory: (latestStory.data as { title: string } | null)?.title ?? null,
-    playlist,
-    latestSong: song ? { title: song.song_title, artist: song.song_artist, artwork: song.song_artwork_url } : null,
-    dreamsDone,
-    dreamsTotal,
-    couponsForMe,
-    couponsFromMe,
+    albums: rows(albums).length,
+    albumCoverPath: rows<{ storage_path: string }>(cover)[0]?.storage_path ?? null,
+    story: rows(story).length,
+    latestStory: rows<{ title: string }>(story)[0]?.title ?? null,
+    playlist: songs.length,
+    latestSong: songs[0] ? { title: songs[0].song_title, artist: songs[0].song_artist, artwork: songs[0].song_artwork_url } : null,
+    dreamsDone: dreamRows.filter((d) => d.done).length,
+    dreamsTotal: dreamRows.length,
+    couponsForMe: couponRows.filter((c) => c.receiver_id === userId && c.status === "available").length,
+    couponsFromMe: couponRows.filter((c) => c.giver_id === userId && c.status === "available").length,
     reasonsMine,
-    reasonsTheirs: Math.max(0, reasonsAll - reasonsMine),
-    openWhenForMe,
-    answeredToday: (answered.count ?? 0) > 0,
+    reasonsTheirs: reasonRows.length - reasonsMine,
+    openWhenForMe: rows<{ recipient_id: string; opened_at: string | null }>(openWhen).filter((l) => l.recipient_id === userId && !l.opened_at).length,
+    answeredToday: rows(answered).length > 0,
   };
 }

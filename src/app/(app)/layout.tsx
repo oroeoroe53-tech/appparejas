@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
 import { AppEffects } from "@/components/AppEffects";
 import { BottomNav } from "@/components/BottomNav";
-import { getAppContext, getUnreadLetters } from "@/server/queries";
+import { getAppContext, getUnreadLetters, getUser } from "@/server/queries";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const ctx = await getAppContext();
+  const user = await getUser();
+  if (!user) redirect("/login");
+  // Both need only the user id, so they travel together instead of one after the other.
+  const [ctx, unreadItems] = await Promise.all([getAppContext(), getUnreadLetters(user.id)]);
   if (!ctx) redirect("/login");
-  const unread = ctx.space ? (await getUnreadLetters(ctx.user.id)).length : 0;
+  const unread = ctx.space ? unreadItems.length : 0;
   return (
     <>
       <AppEffects theme={ctx.preferences.theme} pushWanted={ctx.preferences.notifications_enabled} unread={unread} timezone={ctx.profile.timezone ?? null} />

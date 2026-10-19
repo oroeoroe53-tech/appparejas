@@ -160,6 +160,12 @@ npm run build       # production build
 
 `test:db` needs PostgreSQL server binaries (it auto-detects `/usr/lib/postgresql/*/bin`; set `PGBIN` otherwise) and creates stand-ins for the Supabase-managed `auth` schema and roles ([`supabase/tests/00_stubs.sql`](supabase/tests/00_stubs.sql)). It exercises: signup trigger, anon lockout, invitation hashing/expiry/revocation/single-use, 2-member cap, cross-couple isolation, forged sender/recipient, idempotent sending, content limits, rate limits (including that failed invitation guesses are counted), read/react authorization, push-key column privileges, leaving a space, and account deletion cascade.
 
+## Performance
+
+Each page makes **one wave** of parallel database requests (session check is verified locally from the token, not with a trip to the auth server; the profile, partner and space load together; layout and page data travel side by side). With 100 ms of simulated latency per backend request this took pages from about 530–650 ms to about 120–140 ms. Navigation shows a skeleton immediately (`loading.tsx`).
+
+**The biggest remaining factor is distance.** Put the Vercel function region next to your Supabase region: Supabase → *Project Settings → General → Region*, then Vercel → *Project → Settings → Functions → Function Region*, and redeploy. If they are on different continents every request pays an ocean crossing.
+
 ## Privacy and security model
 
 - **Authorization is in the database.** RLS lets only the two members of a space read its messages; clients cannot insert/update/delete messages, members, invitations or push keys directly. Changing the id in a URL yields "not found".

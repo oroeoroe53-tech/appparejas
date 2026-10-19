@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { currentUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { searchSongs, storeCountry } from "@/server/songs";
 
@@ -8,8 +9,8 @@ export async function GET(request: NextRequest) {
   if (q.length < 2 || q.length > 80) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await currentUser(supabase);
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { error: limitError } = await supabase.rpc("consume_song_search_limit");
   if (limitError) return NextResponse.json({ error: "rate_limited" }, { status: 429 });

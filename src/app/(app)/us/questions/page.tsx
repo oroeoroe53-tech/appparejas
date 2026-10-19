@@ -13,10 +13,9 @@ export const metadata: Metadata = { title: "Daily question" };
 export const dynamic = "force-dynamic";
 
 export default async function QuestionsPage() {
-  const ctx = await requireSpace();
-  const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const today = todayIso(new Date());
-  const [answers, theyAnswered] = await Promise.all([getAnswers(), partnerAnswered(today)]);
+  const [ctx, answers, theyAnswered] = await Promise.all([requireSpace(), getAnswers(), partnerAnswered(today)]);
+  const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const mine = answers.find((a) => a.day === today && a.user_id === ctx.user.id)?.answer ?? null;
   const theirs = answers.find((a) => a.day === today && a.user_id !== ctx.user.id)?.answer ?? null;
 

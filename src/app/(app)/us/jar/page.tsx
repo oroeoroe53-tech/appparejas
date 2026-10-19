@@ -12,9 +12,8 @@ export const metadata: Metadata = { title: "Jar of reasons" };
 export const dynamic = "force-dynamic";
 
 export default async function JarPage() {
-  const ctx = await requireSpace();
+  const [ctx, all] = await Promise.all([requireSpace(), getReasons()]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
-  const all = await getReasons();
   const theirs = all.filter((r) => r.created_by !== ctx.user.id);
   const mine = all.filter((r) => r.created_by === ctx.user.id);
   return (

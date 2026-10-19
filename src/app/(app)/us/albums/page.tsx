@@ -11,8 +11,7 @@ export const metadata: Metadata = { title: "Albums" };
 export const dynamic = "force-dynamic";
 
 export default async function AlbumsPage() {
-  await requireSpace();
-  const [albums, photos] = await Promise.all([getAlbums(), getPhotos()]);
+  const [, albums, photos] = await Promise.all([requireSpace(), getAlbums(), getPhotos()]);
   const byAlbum = new Map<string, typeof photos>();
   for (const p of photos) byAlbum.set(p.album_id, [...(byAlbum.get(p.album_id) ?? []), p]);
   const covers = await signedUrls(albums.map((a) => byAlbum.get(a.id)?.[0]?.storage_path ?? ""));

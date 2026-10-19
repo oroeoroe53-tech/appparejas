@@ -15,8 +15,7 @@ export const metadata: Metadata = { title: "Plans" };
 export const dynamic = "force-dynamic";
 
 export default async function PlansPage() {
-  const ctx = await requireSpace();
-  const events = await getEvents();
+  const [ctx, events] = await Promise.all([requireSpace(), getEvents()]);
   const today = todayIso(new Date());
   const coming = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 800 });
   const past = events.filter((e) => nextOccurrence(e.event_date, e.repeat_yearly, today) === null).reverse();

@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { t } from "@/content";
 import { formatMonth } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getLetters, partnerLabel, type LetterFilter } from "@/server/queries";
+import { redirect } from "next/navigation";
+import { getLetters, getUser, partnerLabel, type LetterFilter } from "@/server/queries";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Our letters" };
@@ -16,12 +17,13 @@ const FILTERS: LetterFilter[] = ["all", "received", "sent"];
 
 export default async function LettersPage({ searchParams }: { searchParams: Promise<{ filter?: string; q?: string; limit?: string }> }) {
   const sp = await searchParams;
-  const ctx = await requireSpace({ allowEnded: true });
+  const user = await getUser();
+  if (!user) redirect("/login");
   const filter = FILTERS.includes(sp.filter as LetterFilter) ? (sp.filter as LetterFilter) : "all";
   const query = (sp.q ?? "").slice(0, 80);
   const limit = Math.min(Math.max(Number.parseInt(sp.limit ?? "", 10) || PAGE, PAGE), 300);
+  const [ctx, { items, hasMore, error }] = await Promise.all([requireSpace({ allowEnded: true }), getLetters(user.id, { filter, query, limit })]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
-  const { items, hasMore, error } = await getLetters(ctx.user.id, { filter, query, limit });
 
   const href = (over: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
