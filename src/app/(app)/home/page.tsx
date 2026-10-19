@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Ticket } from "lucide-react";
 import { NextUp } from "@/components/home/NextUp";
 import { QuestionCard } from "@/components/us/Forms";
 import { questionForDay } from "@/content/questions";
@@ -16,7 +17,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { t } from "@/content";
 import { dayPart, formatTime, formatToday } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
-import { getAnswers, getCharacters, getEvents, getLetters, getMoods, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
+import { getAnswers, getCharacters, getCoupons, getEvents, getLetters, getMoods, getUnreadLetters, partnerAnswered, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: "For you" };
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const ctx = await requireSpace({ allowEnded: true });
   const today = todayIso(new Date());
-  const [unread, recent, moods, characters, events, answers, theyAnswered] = await Promise.all([
+  const [unread, recent, moods, characters, events, answers, theyAnswered, coupons] = await Promise.all([
     getUnreadLetters(ctx.user.id),
     getLetters(ctx.user.id, { filter: "all", query: "", limit: 4 }),
     getMoods(),
@@ -32,7 +33,9 @@ export default async function HomePage() {
     getEvents(),
     getAnswers(4),
     partnerAnswered(today),
+    getCoupons(),
   ]);
+  const waitingCoupons = coupons.filter((c) => c.receiver_id === ctx.user.id && c.status === "available").length;
   const comingUp = upcoming({ events, togetherSince: ctx.space.togetherSince, today, horizon: 45 });
   const myAnswer = answers.find((a) => a.day === today && a.user_id === ctx.user.id)?.answer ?? null;
   const theirAnswer = answers.find((a) => a.day === today && a.user_id !== ctx.user.id)?.answer ?? null;
@@ -113,6 +116,11 @@ export default async function HomePage() {
       {!ended && (
         <div className="mt-8 space-y-4">
           <QuestionCard question={questionForDay(toDayNumber(today))} partnerName={partnerName} myAnswer={myAnswer} partnerAnswer={theirAnswer} partnerAnswered={theyAnswered} />
+          {waitingCoupons > 0 && (
+            <Link href="/us/coupons" className="flex items-center gap-3 rounded-3xl border-2 border-dashed border-rose bg-paper px-4 py-3.5 text-[15px]">
+              <Ticket className="h-5 w-5 text-cherry" aria-hidden /> {t.coupons.youHave(waitingCoupons)}
+            </Link>
+          )}
           <NextUp items={comingUp} />
         </div>
       )}

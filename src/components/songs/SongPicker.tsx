@@ -12,7 +12,7 @@ import { SongPlayer, type SongPlayerHandle } from "./SongPlayer";
 const LENGTHS = [5, 10, 15, 20, 30];
 
 /** Optional "add a song" block for the composer: search, pick a track, choose which part plays. */
-export function SongPicker({ value, onChange }: { value: SongClip | null; onChange: (song: SongClip | null) => void }) {
+export function SongPicker({ value, onChange, simple = false, title, hint }: { value: SongClip | null; onChange: (song: SongClip | null) => void; simple?: boolean; title?: string; hint?: string }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SongResult[] | null>(null);
@@ -67,8 +67,8 @@ export function SongPicker({ value, onChange }: { value: SongClip | null; onChan
       <audio ref={audition} onEnded={() => setAuditioning(null)} />
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-serif text-lg">{t.song.sectionTitle}</h3>
-          <p className="text-[13px] text-muted">{t.song.optional}</p>
+          <h3 className="font-serif text-lg">{title ?? t.song.sectionTitle}</h3>
+          <p className="text-[13px] text-muted">{hint ?? t.song.optional}</p>
         </div>
         {!value && !open && (
           <Button variant="secondary" className="min-h-11 px-4" onClick={() => setOpen(true)}>
@@ -80,7 +80,7 @@ export function SongPicker({ value, onChange }: { value: SongClip | null; onChan
       {value && (
         <div className="mt-4 space-y-4">
           <SongPlayer ref={player} clip={value} />
-          <div className="rounded-2xl border border-line p-4">
+          <div className={cn("rounded-2xl border border-line p-4", simple && "hidden")}>
             <p className="text-sm font-medium">{t.song.partTitle}</p>
             <label htmlFor="clip-start" className="mt-3 block text-[13px] text-muted">
               {t.song.startsAt(formatClock(value.start))}

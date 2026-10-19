@@ -192,3 +192,53 @@ export async function partnerAnswered(day: string): Promise<boolean> {
   const { data } = await supabase.rpc("partner_has_answered", { p_day: day });
   return data === true;
 }
+
+export interface DreamRow {
+  id: string;
+  title: string;
+  note: string | null;
+  target_date: string | null;
+  done: boolean;
+  done_at: string | null;
+  created_by: string;
+}
+
+export async function getDreams(): Promise<DreamRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("dreams").select("id, title, note, target_date, done, done_at, created_by").order("created_at", { ascending: false }).limit(500);
+  return (data ?? []) as DreamRow[];
+}
+
+export interface CouponRow {
+  id: string;
+  giver_id: string;
+  receiver_id: string;
+  title: string;
+  description: string | null;
+  status: "available" | "used";
+  created_at: string;
+  used_at: string | null;
+}
+
+export async function getCoupons(): Promise<CouponRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("coupons").select("id, giver_id, receiver_id, title, description, status, created_at, used_at").order("created_at", { ascending: false }).limit(500);
+  return (data ?? []) as CouponRow[];
+}
+
+export interface PlaylistRow {
+  id: string;
+  added_by: string;
+  song_track_id: string;
+  song_title: string;
+  song_artist: string;
+  song_preview_url: string;
+  song_artwork_url: string | null;
+  note: string | null;
+}
+
+export async function getPlaylist(): Promise<PlaylistRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("playlist_songs").select("id, added_by, song_track_id, song_title, song_artist, song_preview_url, song_artwork_url, note").order("created_at", { ascending: false }).limit(300);
+  return (data ?? []) as PlaylistRow[];
+}

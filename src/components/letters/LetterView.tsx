@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { SongPlayer, type SongPlayerHandle } from "@/components/songs/SongPlayer";
 import type { SongClip } from "@/lib/songs";
+import { saveLetterSongAction } from "@/app/actions/love";
 import { markReadAction, reactAction } from "@/app/actions/messages";
 import { ButtonLink, buttonClass } from "@/components/ui/Button";
 import { t } from "@/content";
@@ -36,6 +37,7 @@ export function LetterView({ id, type, text, createdAt, readAt, reaction: initia
   const [skipCeremony, setSkipCeremony] = useState(alreadyRead || !isRecipient);
   const [reaction, setReaction] = useState<Reaction | null>(initialReaction);
   const [notice, setNotice] = useState<string>();
+  const [playlistState, setPlaylistState] = useState<"idle" | "saving" | "saved">("idle");
   const [, startTransition] = useTransition();
 
   const handleOpened = useCallback(() => {
@@ -86,6 +88,23 @@ export function LetterView({ id, type, text, createdAt, readAt, reaction: initia
           <p className="mb-2 text-xs tracking-[0.2em] text-muted uppercase">{isRecipient ? t.song.heading(senderName) : t.song.headingSent}</p>
           <SongPlayer ref={songPlayer} clip={song} />
           <p className="mt-2 text-[11px] text-muted">{isRecipient ? `${t.song.tapHint} ${t.song.attribution}` : t.song.attribution}</p>
+          <div className="mt-3">
+            <button
+              type="button"
+              disabled={playlistState === "saved" || playlistState === "saving"}
+              onClick={() => {
+                setPlaylistState("saving");
+                startTransition(async () => {
+                  const res = await saveLetterSongAction(id);
+                  setPlaylistState(res.ok ? "saved" : "idle");
+                  setNotice(res.ok ? t.playlist.savedFromLetter : res.error);
+                });
+              }}
+              className="text-sm text-cherry underline underline-offset-4 disabled:no-underline disabled:text-muted"
+            >
+              {playlistState === "saved" ? t.playlist.savedFromLetter : t.playlist.saveFromLetter}
+            </button>
+          </div>
         </div>
       )}
 
