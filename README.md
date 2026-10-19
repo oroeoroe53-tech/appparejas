@@ -1,6 +1,6 @@
 # US — a little place for two
 
-A private PWA for two people. Instead of chat bubbles, messages arrive as small digital gestures: a sealed envelope, a taped note, a beating heart, a hug in words, or a secret that waits for the seal to break. Notifications are real Web Push (VAPID), not in-page toasts.
+A private PWA for two people. Instead of chat bubbles, messages arrive as small digital gestures: a sealed envelope, a taped note, a beating heart, a hug in words, a secret that waits for the seal to break, or an old parchment letter with a red wax seal. Any message can carry a short song clip. Notifications are real Web Push (VAPID), not in-page toasts.
 
 > The product name lives in one place: [`src/config/brand.ts`](src/config/brand.ts). All UI copy lives in [`src/content/en.ts`](src/content/en.ts) (swap `src/content/index.ts` to add a translation).
 
@@ -12,7 +12,8 @@ A private PWA for two people. Instead of chat bubbles, messages arrive as small 
 | Invite + link two people (one-time, 48h, 2-member cap) | yes (SQL + UI) | **SQL tests on real Postgres 16** | – |
 | Send / read / react / history / search | yes | SQL tests on Postgres; UI against a **mock** API | – |
 | Row Level Security, minimum privilege | yes | **SQL tests on Postgres 16** (95+ assertions) | apply migration |
-| Five distinct message experiences + previews | yes | visually reviewed in headless Chromium | – |
+| Six distinct message experiences + previews (incl. Old Letter) | yes | visually reviewed in headless Chromium | – |
+| Song clip attached to a message (search, pick the part, play on open) | yes | DB rules + parsing tested; **never run against the live Apple API or on a phone** | – |
 | Web Push send (VAPID + RFC 8291 encryption) | yes | **against a local HTTPS push-service stand-in** | VAPID keys, service-role key |
 | Push subscribe/unsubscribe, notification click → letter | yes | code reviewed; **not run on a real phone** | VAPID keys, HTTPS |
 | PWA manifest, service worker, offline page | yes | manifest/headers checked on a production server | HTTPS in production |
@@ -80,13 +81,21 @@ Without Supabase variables the app still builds and starts, and redirects to a `
 ## Configure Supabase
 
 1. Create a project at supabase.com.
-2. **Schema:** apply [`supabase/migrations/20260101000000_init.sql`](supabase/migrations/20260101000000_init.sql) — paste it into the SQL editor, or with the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
+2. **Schema:** apply the files in [`supabase/migrations/`](supabase/migrations/) **in order** (`20260101000000_init.sql`, then `20260102000000_old_letter_and_song.sql`) — paste each into the SQL editor, or with the CLI: `supabase init && supabase link --project-ref <ref> && supabase db push`.
 3. **Auth → URL Configuration:** set *Site URL* to your `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to *Redirect URLs* (needed for email confirmation and password reset). Open those emailed links on the same device/browser that requested them (PKCE).
 4. **Auth → Providers → Email:** keep email/password on. Decide whether to require email confirmation (the app handles both). Set a sensible minimum password length (the app enforces 8).
 5. **Auth → Rate limits / SMTP:** the built-in mailer is heavily rate-limited; configure your own SMTP before real use.
 6. Copy the project URL, anon key and service-role key into your environment (Project Settings → API).
 
 The migration revokes default table/function privileges and grants only what is needed. All writes go through `SECURITY DEFINER` functions that read `auth.uid()` and ignore any client-supplied identity.
+
+## Song clips
+
+A message can carry a song: the sender searches by name, picks a track and chooses which part (3–30 s of the 30 s preview) plays. It starts when the recipient opens the message (the tap that opens the seal is the moment browsers allow sound) or when they press play.
+
+- Audio comes from the free Apple iTunes Search/Lookup API previews, played straight from Apple's servers; nothing is copied or stored by us except title, artist, artwork link and the chosen range. The server re-fetches the track from Apple instead of trusting the browser, and the database accepts only `https` URLs on `itunes.apple.com` / `mzstatic.com`.
+- **Limits:** only 30-second previews, and only songs Apple offers a preview for (varies by country). A song cannot start by itself when a notification arrives: phones block sound until the person touches the screen, and web push notifications cannot play custom sounds. Search is rate limited (30 per 10 minutes).
+- Not verified here: the sandbox could not reach `itunes.apple.com`, so the live API call and real audio playback on phones are untested.
 
 ## Configure Web Push
 
@@ -146,6 +155,7 @@ npm run build       # production build
 - Realtime updates are not implemented: new letters appear on next navigation/refresh/notification tap.
 - Avatars are an optional https link (no upload/storage yet).
 - Email recovery links use PKCE: open them on the same browser that requested them.
+- Songs are 30-second previews only (see *Song clips*); no autoplay before the first tap.
 - English only for now (copy is centralised for translation).
 
 ## Pending / ideas

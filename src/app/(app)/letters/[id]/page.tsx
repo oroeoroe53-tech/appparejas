@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { t } from "@/content";
 import { requireSpace } from "@/server/guards";
 import { getLetter, partnerLabel } from "@/server/queries";
+import type { SongClip } from "@/lib/songs";
 
 export const metadata: Metadata = { title: "Letter", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -26,6 +27,18 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
 
   const isRecipient = letter.recipient_id === ctx.user.id;
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
+  const song: SongClip | null =
+    letter.song_track_id && letter.song_title && letter.song_artist && letter.song_preview_url && letter.song_start !== null && letter.song_duration !== null
+      ? {
+          trackId: letter.song_track_id,
+          title: letter.song_title,
+          artist: letter.song_artist,
+          previewUrl: letter.song_preview_url,
+          artworkUrl: letter.song_artwork_url,
+          start: letter.song_start,
+          duration: letter.song_duration,
+        }
+      : null;
   return (
     <div className="pt-8">
       <LetterView
@@ -38,6 +51,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
         isRecipient={isRecipient}
         senderName={isRecipient ? partnerName : ctx.profile.display_name}
         partnerName={partnerName}
+        song={song}
       />
     </div>
   );

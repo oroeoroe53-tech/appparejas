@@ -5,6 +5,7 @@ import { HeartMessage } from "./HeartMessage";
 import { HugInWords } from "./HugInWords";
 import { LittleNote } from "./LittleNote";
 import { LoveLetter } from "./LoveLetter";
+import { OldLetter } from "./OldLetter";
 import { SecretMessage } from "./SecretMessage";
 import type { ExperienceProps } from "./shared";
 
@@ -14,6 +15,7 @@ const EXPERIENCES: Record<MessageType, (props: ExperienceProps) => React.ReactEl
   heart_message: HeartMessage,
   hug_in_words: HugInWords,
   secret_message: SecretMessage,
+  old_letter: OldLetter,
 };
 
 export function MessageExperience({ type, ...props }: ExperienceProps & { type: MessageType }) {

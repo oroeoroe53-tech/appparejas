@@ -7,14 +7,16 @@ import { buildMessagePayload } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reactionSchema, sendMessageSchema, uuidSchema } from "@/lib/validation";
+import { songInputSchema, type SongInput } from "@/lib/songs";
 import { sendPushToUser } from "@/server/push";
+import { lookupSong } from "@/server/songs";
 import type { Message, PreviewMode, PushStatus } from "@/lib/types";
 
 export type SendResult =
   | { ok: true; messageId: string; push: "sent" | "skipped" | "failed" | "already_sent" }
   | { ok: false; error: string };
 
-export async function sendMessageAction(input: { content: string; type: string; clientId: string }): Promise<SendResult> {
+export async function sendMessageAction(input: { content: string; type: string; clientId: string; song?: SongInput | null }): Promise<SendResult> {
   const parsed = sendMessageSchema.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
@@ -24,12 +26,30 @@ export async function sendMessageAction(input: { content: string; type: string; 
     return { ok: false, error: sendErrorMessage("empty") };
   }
 
+  // A song is never taken from the browser as-is: we re-fetch the track from Apple and keep only its canonical data.
+  let pSong: Record<string, unknown> | null = null;
+  if (input.song) {
+    const clip = songInputSchema.safeParse(input.song);
+    const track = clip.success ? await lookupSong(clip.data.trackId) : null;
+    if (!clip.success || !track) return { ok: false, error: sendErrorMessage("invalid_song") };
+    pSong = {
+      track_id: track.trackId,
+      title: track.title,
+      artist: track.artist,
+      preview_url: track.previewUrl,
+      artwork_url: track.artworkUrl,
+      start: clip.data.start,
+      duration: clip.data.duration,
+    };
+  }
+
   const supabase = await createClient();
   // The database derives sender and recipient from the session and enforces limits and idempotency.
   const { data, error } = await supabase.rpc("send_message", {
     p_content: parsed.data.content,
     p_type: parsed.data.type,
     p_client_id: parsed.data.clientId,
+    p_song: pSong,
   });
   if (error || !data) return { ok: false, error: sendErrorMessage(dbErrorCode(error)) };
 

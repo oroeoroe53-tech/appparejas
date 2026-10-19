@@ -29,6 +29,13 @@ export interface Message {
   reaction: Reaction | null;
   reacted_at: string | null;
   push_status: PushStatus;
+  song_track_id: string | null;
+  song_title: string | null;
+  song_artist: string | null;
+  song_preview_url: string | null;
+  song_artwork_url: string | null;
+  song_start: number | null;
+  song_duration: number | null;
 }
 
 export interface SpaceContext {

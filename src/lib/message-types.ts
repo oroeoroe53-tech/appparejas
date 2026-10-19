@@ -1,4 +1,4 @@
-export const MESSAGE_TYPES = ["love_letter", "little_note", "heart_message", "hug_in_words", "secret_message"] as const;
+export const MESSAGE_TYPES = ["love_letter", "little_note", "heart_message", "hug_in_words", "secret_message", "old_letter"] as const;
 export type MessageType = (typeof MESSAGE_TYPES)[number];
 
 /** Keep in sync with public.send_message in the SQL migration. */
@@ -8,6 +8,7 @@ export const MESSAGE_LIMITS: Record<MessageType, number> = {
   secret_message: 1500,
   hug_in_words: 1000,
   love_letter: 3000,
+  old_letter: 3000,
 };
 
 export const REACTIONS = ["love", "smile", "miss", "thanks", "hug"] as const;

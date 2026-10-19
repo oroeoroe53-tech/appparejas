@@ -36,6 +36,14 @@ export function TypeGlyph({ type, size = 48 }: { type: MessageType; size?: numbe
           <circle cx="32" cy="14" r="2" fill="#9d394d" />
         </svg>
       );
+    case "old_letter":
+      return (
+        <svg {...common}>
+          <path d="M6 9c4-3 8 1 12-2s8 2 12-1 8 2 12-1 8 1 12-1v34c-4 3-8-1-12 2s-8-2-12 1-8-2-12 1-8-1-12 1z" fill="#e6cf9f" stroke="#b9975c" strokeWidth="1.2" />
+          <path d="M16 19h32M16 26h26M16 33h18" stroke="#6b4a26" strokeOpacity="0.5" strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="46" cy="35" r="6" fill="#9d394d" />
+        </svg>
+      );
     case "secret_message":
       return (
         <svg {...common}>

@@ -10,6 +10,9 @@ import { TypeGlyph } from "@/components/letters/TypeGlyph";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
+import { SongPicker } from "@/components/songs/SongPicker";
+import { SongPlayer, type SongPlayerHandle } from "@/components/songs/SongPlayer";
+import { isAppleArtworkUrl, isApplePreviewUrl, type SongClip } from "@/lib/songs";
 import { t } from "@/content";
 import { isMessageType, MESSAGE_LIMITS, MESSAGE_TYPES, type MessageType } from "@/lib/message-types";
 import { useIsClient, useOnline } from "@/lib/use-client";
@@ -23,6 +26,18 @@ interface Draft {
   text: string;
   type: MessageType;
   clientId: string;
+  song: SongClip | null;
+}
+
+function validSong(value: unknown): SongClip | null {
+  const v = value as Partial<SongClip> | null;
+  if (!v || typeof v !== "object") return null;
+  const ok =
+    typeof v.trackId === "string" && /^\d{1,20}$/.test(v.trackId) && typeof v.title === "string" && typeof v.artist === "string" &&
+    typeof v.previewUrl === "string" && isApplePreviewUrl(v.previewUrl) &&
+    (v.artworkUrl === null || (typeof v.artworkUrl === "string" && isAppleArtworkUrl(v.artworkUrl))) &&
+    Number.isInteger(v.start) && Number.isInteger(v.duration);
+  return ok ? (v as SongClip) : null;
 }
 
 function loadDraft(): Draft | null {
@@ -31,7 +46,7 @@ function loadDraft(): Draft | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Draft>;
     if (typeof parsed.text !== "string" || !isMessageType(parsed.type) || typeof parsed.clientId !== "string") return null;
-    return { text: parsed.text, type: parsed.type, clientId: parsed.clientId };
+    return { text: parsed.text, type: parsed.type, clientId: parsed.clientId, song: validSong(parsed.song) };
   } catch {
     return null;
   }
@@ -67,6 +82,8 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
   const [text, setText] = useState(draft?.text ?? "");
   const [type, setType] = useState<MessageType>(draft?.type ?? "love_letter");
   const [clientId, setClientId] = useState<string>(() => draft?.clientId ?? newId());
+  const [song, setSong] = useState<SongClip | null>(draft?.song ?? null);
+  const songPlayer = useRef<SongPlayerHandle>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string>();
@@ -77,8 +94,8 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
   const editor = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (step !== "sent") saveDraft({ text, type, clientId });
-  }, [text, type, clientId, step]);
+    if (step !== "sent") saveDraft({ text, type, clientId, song });
+  }, [text, type, clientId, song, step]);
 
   const maxChars = MESSAGE_LIMITS[type];
   const length = Array.from(text).length;
@@ -102,7 +119,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
     setSending(true);
     setError(undefined);
     try {
-      const res = await sendMessageAction({ content: text, type, clientId });
+      const res = await sendMessageAction({ content: text, type, clientId, song: song ? { trackId: song.trackId, start: song.start, duration: song.duration } : null });
       if (res.ok) {
         saveDraft(null);
         setResult(res);
@@ -117,11 +134,12 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
       lock.current = false;
       setSending(false);
     }
-  }, [clientId, text, tooLong, trimmedEmpty, type]);
+  }, [clientId, song, text, tooLong, trimmedEmpty, type]);
 
   function discard() {
     saveDraft(null);
     setText("");
+    setSong(null);
     setClientId(newId());
     setConfirmDiscard(false);
     setStep("write");
@@ -130,6 +148,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
 
   function another() {
     setText("");
+    setSong(null);
     setClientId(newId());
     setResult(null);
     setStep("write");
@@ -180,6 +199,7 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
                 <p id="counter" className={cn("text-right text-xs", tooLong ? "text-cherry" : "text-[#8a6d66]")}>{t.write.counter(length, maxChars)}</p>
               </div>
               {tooLong && <p role="alert" className="mt-3 text-sm text-cherry">{t.write.errors.tooLong(maxChars)}</p>}
+              <SongPicker value={song} onChange={setSong} />
               <p className="mt-3 text-[13px] text-muted">{t.write.draftSaved}</p>
               <div className="mt-6 flex items-center justify-between gap-3">
                 {confirmDiscard ? (
@@ -235,7 +255,13 @@ function ComposerEditor({ senderName, partnerName, isReply }: ComposerProps) {
           {step === "preview" && (
             <div>
               <p className="mb-4 text-sm text-muted">{t.write.previewHint}</p>
-              <MessageExperience key={previewKey} type={type} text={text} senderName={senderName} dateLabel={t.write.steps.preview} />
+              <MessageExperience key={previewKey} type={type} text={text} senderName={senderName} dateLabel={t.write.steps.preview} onOpenStart={() => void songPlayer.current?.play()} />
+              {song && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs tracking-[0.2em] text-muted uppercase">{t.song.headingSent}</p>
+                  <SongPlayer ref={songPlayer} clip={song} />
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button variant="ghost" className="min-h-10 px-4" onClick={() => setPreviewKey((k) => k + 1)}><RotateCcw className="h-4 w-4" aria-hidden /> {t.write.previewReplay}</Button>
                 <Button variant="ghost" className="min-h-10 px-4" onClick={() => go("write")}>{t.write.editMessage}</Button>

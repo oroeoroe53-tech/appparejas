@@ -1,3 +1,4 @@
+import { Music2 } from "lucide-react";
 import Link from "next/link";
 import { t } from "@/content";
 import { formatDateTime, truncate } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function LetterRow({ letter, userId, partnerName }: { letter: LetterListI
           <span className="truncate">{title}</span>
           {letter.sealed && <span className="h-2 w-2 shrink-0 rounded-full bg-cherry" aria-hidden />}
           {letter.sealed && <span className="sr-only">{t.common.unread}</span>}
+          {letter.song_track_id && <Music2 className="h-3.5 w-3.5 shrink-0 text-muted" aria-label={t.song.sectionTitle} />}
         </span>
         <span className="mt-0.5 block truncate text-sm text-muted">
           {letter.sealed ? t.letters.sealedByType(t.types[letter.message_type].name) : truncate(letter.content, 70)}

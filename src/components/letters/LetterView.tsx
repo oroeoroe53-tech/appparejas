@@ -3,7 +3,9 @@
 import { motion } from "framer-motion";
 import { RotateCcw, Reply } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
+import { SongPlayer, type SongPlayerHandle } from "@/components/songs/SongPlayer";
+import type { SongClip } from "@/lib/songs";
 import { markReadAction, reactAction } from "@/app/actions/messages";
 import { ButtonLink, buttonClass } from "@/components/ui/Button";
 import { t } from "@/content";
@@ -22,9 +24,12 @@ interface Props {
   isRecipient: boolean;
   senderName: string;
   partnerName: string;
+  song: SongClip | null;
 }
 
-export function LetterView({ id, type, text, createdAt, readAt, reaction: initialReaction, isRecipient, senderName, partnerName }: Props) {
+export function LetterView({ id, type, text, createdAt, readAt, reaction: initialReaction, isRecipient, senderName, partnerName, song }: Props) {
+  const songPlayer = useRef<SongPlayerHandle>(null);
+  const songStarted = useRef(false);
   const alreadyRead = readAt !== null;
   const [opened, setOpened] = useState(alreadyRead || !isRecipient);
   const [replay, setReplay] = useState(0);
@@ -36,13 +41,15 @@ export function LetterView({ id, type, text, createdAt, readAt, reaction: initia
   const handleOpened = useCallback(() => {
     if (!isRecipient) return;
     setOpened(true);
+    // Some styles open without a tap (note, hug): try to start the song, the button is the fallback.
+    if (song && !alreadyRead && !songStarted.current) void songPlayer.current?.play();
     if (alreadyRead) return;
     // Only now, after the reader actually opened it, is the letter marked as read.
     startTransition(async () => {
       const res = await markReadAction(id);
       if (!res.ok) setNotice(t.experience.markFailed);
     });
-  }, [alreadyRead, id, isRecipient]);
+  }, [alreadyRead, id, isRecipient, song]);
 
   function react(next: Reaction) {
     const target = reaction === next ? null : next;
@@ -69,8 +76,18 @@ export function LetterView({ id, type, text, createdAt, readAt, reaction: initia
           dateLabel={formatDateTime(createdAt)}
           autoOpen={skipCeremony}
           onOpened={isRecipient ? handleOpened : undefined}
+          // The tap that opens the seal is the moment browsers allow sound to start.
+          onOpenStart={song ? () => { songStarted.current = true; void songPlayer.current?.play(); } : undefined}
         />
       </div>
+
+      {song && (
+        <div className="mt-6" hidden={!opened}>
+          <p className="mb-2 text-xs tracking-[0.2em] text-muted uppercase">{isRecipient ? t.song.heading(senderName) : t.song.headingSent}</p>
+          <SongPlayer ref={songPlayer} clip={song} />
+          <p className="mt-2 text-[11px] text-muted">{isRecipient ? `${t.song.tapHint} ${t.song.attribution}` : t.song.attribution}</p>
+        </div>
+      )}
 
       {!isRecipient && (
         <dl className="mt-6 space-y-1 text-sm text-muted">

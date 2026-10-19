@@ -12,20 +12,24 @@ export interface ExperienceProps {
   autoOpen?: boolean;
   /** Fires once the content is actually visible to the reader. Not called in previews. */
   onOpened?: () => void;
+  /** Fires synchronously inside the reader's tap that starts the opening (a valid moment to start audio). */
+  onOpenStart?: () => void;
 }
 
 export const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** Open/close state + a one-shot `onOpened` that survives re-renders and cleans up its timers. */
-export function useReveal({ autoOpen, onOpened, deferNotify }: Pick<ExperienceProps, "autoOpen" | "onOpened"> & { deferNotify?: boolean }) {
+export function useReveal({ autoOpen, onOpened, onOpenStart, deferNotify }: Pick<ExperienceProps, "autoOpen" | "onOpened" | "onOpenStart"> & { deferNotify?: boolean }) {
   const reduce = useReducedMotion();
   const [stage, setStage] = useState<"closed" | "opening" | "open">(autoOpen ? "open" : "closed");
   const timers = useRef<number[]>([]);
   const notified = useRef(false);
   const onOpenedRef = useRef(onOpened);
+  const onOpenStartRef = useRef(onOpenStart);
   useEffect(() => {
     onOpenedRef.current = onOpened;
-  }, [onOpened]);
+    onOpenStartRef.current = onOpenStart;
+  }, [onOpened, onOpenStart]);
 
   const notify = useCallback(() => {
     if (notified.current) return;
@@ -49,6 +53,7 @@ export function useReveal({ autoOpen, onOpened, deferNotify }: Pick<ExperiencePr
   const begin = useCallback(
     (duration: number) => {
       if (stage !== "closed") return;
+      onOpenStartRef.current?.();
       if (reduce) {
         setStage("open");
         notify();
