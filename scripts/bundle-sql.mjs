@@ -1,6 +1,7 @@
 // Concatenates newer migrations into single files you can paste in the Supabase SQL editor.
 //   after-02.sql  everything from 20260103 on (projects that applied init + old_letter_and_song)
 //   after-07.sql  only from 20260108 on     (projects that already applied after-02 as of the media/albums release)
+//   after-09.sql  only from 20260110 on     (projects that already applied after-08 / the hug release)
 //   after-08.sql  only from 20260109 on     (projects that already applied the jar / open-when migration)
 // Run: npm run sql:bundle
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
@@ -21,5 +22,6 @@ async function bundle(name, from, note) {
 }
 
 await bundle("after-02.sql", "20260103000000", "everything added after the Old Letter / song migration.");
+await bundle("after-09.sql", "20260110000000", "photo places for the album map.");
 await bundle("after-08.sql", "20260109000000", "everything added after the jar / open-when migration (character clothes and the hug gesture).");
 await bundle("after-07.sql", "20260108000000", "everything added after the albums / media migration (jar of reasons, open-when letters, time zones).");

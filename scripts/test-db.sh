@@ -26,7 +26,7 @@ run_file() { $PSQL -d app_test -f "$1"; }
 run_file "$ROOT/supabase/tests/00_stubs.sql"
 for f in "$ROOT"/supabase/migrations/*.sql; do run_file "$f"; done
 run_file "$ROOT/supabase/tests/01_helpers.sql"
-for f in "$ROOT"/supabase/tests/[1-9]*_*.test.sql; do
+for f in "$ROOT"/supabase/tests/[1-9a]*_*.test.sql; do
   echo "== $(basename "$f")"
   if ! out=$(run_file "$f" 2>&1); then echo "$out"; echo "DB tests FAILED"; exit 1; fi
   echo "$out" | grep -E "NOTICE:  ok - " | sed -E 's/^.*NOTICE:  /  /'
@@ -49,4 +49,10 @@ $PSQL -d app_bundle3 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
 for f in "$ROOT"/supabase/migrations/2026010[1-8]*.sql; do $PSQL -d app_bundle3 -f "$f" >/dev/null; done
 $PSQL -d app_bundle3 -f "$ROOT/supabase/bundles/after-08.sql" >/dev/null
 echo "  ok - the after-08 bundle applies cleanly after migrations 01-08"
+# And the newest one on top of 01-09.
+$PSQL -d postgres -c "create database app_bundle4" >/dev/null
+$PSQL -d app_bundle4 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
+for f in "$ROOT"/supabase/migrations/2026010[1-9]*.sql; do $PSQL -d app_bundle4 -f "$f" >/dev/null; done
+$PSQL -d app_bundle4 -f "$ROOT/supabase/bundles/after-09.sql" >/dev/null
+echo "  ok - the after-09 bundle applies cleanly after migrations 01-09"
 echo "DB tests passed"
