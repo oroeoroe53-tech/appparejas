@@ -169,4 +169,30 @@ alter table public.photos
 grant insert (lat, lng, place) on public.photos to authenticated;
 grant update (lat, lng, place) on public.photos to authenticated;
 
+-- ===== 20260111000000_home_background.sql =====
+
+-- A personal choice: use one of your couple's photos as the background of the home screen.
+-- Only the person who chose it sees it as their background.
+
+alter table public.user_preferences
+  add column home_bg_path text check (home_bg_path is null or home_bg_path ~ '^[0-9a-f-]{36}/photos/[0-9a-f-]{36}\.(jpg|png|webp)$');
+
+-- The photo has to belong to my own couple space and really exist.
+create function public.verify_home_background() returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if new.home_bg_path is not null and new.home_bg_path is distinct from old.home_bg_path then
+    if position(coalesce(public.my_space_id()::text, '-') || '/' in new.home_bg_path) <> 1
+       or not exists (select 1 from storage.objects where bucket_id = 'couple-media' and name = new.home_bg_path) then
+      raise exception 'invalid_photo';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+create trigger user_preferences_home_bg before update on public.user_preferences for each row execute function public.verify_home_background();
+
+grant update (home_bg_path) on public.user_preferences to authenticated;
+
 commit;

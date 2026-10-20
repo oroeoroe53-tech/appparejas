@@ -55,4 +55,9 @@ $PSQL -d app_bundle4 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
 for f in "$ROOT"/supabase/migrations/2026010[1-9]*.sql; do $PSQL -d app_bundle4 -f "$f" >/dev/null; done
 $PSQL -d app_bundle4 -f "$ROOT/supabase/bundles/after-09.sql" >/dev/null
 echo "  ok - the after-09 bundle applies cleanly after migrations 01-09"
+$PSQL -d postgres -c "create database app_bundle5" >/dev/null
+$PSQL -d app_bundle5 -f "$ROOT/supabase/tests/00_stubs.sql" >/dev/null
+for f in "$ROOT"/supabase/migrations/2026010[1-9]*.sql "$ROOT"/supabase/migrations/20260110*.sql; do $PSQL -d app_bundle5 -f "$f" >/dev/null; done
+$PSQL -d app_bundle5 -f "$ROOT/supabase/bundles/after-10.sql" >/dev/null
+echo "  ok - the after-10 bundle applies cleanly after migrations 01-10"
 echo "DB tests passed"
