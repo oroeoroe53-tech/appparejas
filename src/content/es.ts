@@ -192,7 +192,7 @@ export const es: Copy = {
       name: "Abrazo",
       tagline: "Un abrazo que se siente.",
       sealHint: "",
-      notification: "Alguien te manda un abrazo.",
+      notification: "Tienes un abrazo esperándote.",
     },
     voice_note: {
       name: "Nota de voz",
@@ -641,7 +641,7 @@ export const es: Copy = {
     sending: "Enviando…",
     sentLine: "Abrazo enviado. Su móvil vibrará.",
     content: "Un abrazo",
-    pushBody: "Te manda un abrazo",
+    pushBody: "🤗 Te abraza muy fuerte",
     received: (name: string) => `${name} te abraza`,
     sending_to: (name: string) => `Abrazas a ${name}`,
     close: "Cerrar",

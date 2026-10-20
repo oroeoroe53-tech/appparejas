@@ -2,10 +2,11 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { renderCharacterSvg } from "@/lib/character";
 import { sanitizeCharacter } from "@/lib/character-options";
 import { shade } from "@/lib/clothes";
+import { playHeartbeat } from "@/lib/heartbeat";
 import { HUG_VIBRATION } from "@/lib/notifications";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -18,6 +19,16 @@ export function HugScene({ them, me, vibrate = true, label }: { them: unknown; m
   const reduce = useReducedMotion();
   const left = useMemo(() => ({ cfg: sanitizeCharacter(them), svg: renderCharacterSvg(them, "loved") }), [them]);
   const right = useMemo(() => ({ cfg: sanitizeCharacter(me), svg: renderCharacterSvg(me, "loved") }), [me]);
+
+  // The heartbeat starts by itself when the browser allows it (e.g. right after you tap "send");
+  // otherwise the first touch on the scene starts it, since browsers need a tap before playing sound.
+  const sounded = useRef(false);
+  useEffect(() => {
+    sounded.current = playHeartbeat();
+  }, []);
+  const soundOnTouch = () => {
+    if (!sounded.current) sounded.current = playHeartbeat();
+  };
 
   useEffect(() => {
     if (vibrate && "vibrate" in navigator) navigator.vibrate(HUG_VIBRATION);
@@ -64,7 +75,15 @@ export function HugScene({ them, me, vibrate = true, label }: { them: unknown; m
   );
 
   return (
-    <div role="img" aria-label={label} className="relative mx-auto h-56 w-full max-w-sm select-none">
+    <motion.div
+      role="img"
+      aria-label={label}
+      onPointerDown={soundOnTouch}
+      className="relative mx-auto h-56 w-full max-w-sm select-none"
+      // A slow double pulse, like a heartbeat, once they are holding each other.
+      animate={reduce ? undefined : { scale: [1, 1.035, 1, 1.025, 1] }}
+      transition={{ delay: 1.2, duration: 0.95, repeat: Infinity, ease: "easeInOut" }}
+    >
       <motion.div
         className="absolute bottom-6 left-0 h-36 w-36 overflow-hidden rounded-full bg-paper shadow-lift ring-4 ring-paper [&>svg]:h-full [&>svg]:w-full"
         initial={{ x: reduce ? 52 : -10, rotate: 0 }}
@@ -97,6 +116,6 @@ export function HugScene({ them, me, vibrate = true, label }: { them: unknown; m
             <Heart className="h-5 w-5 fill-current" />
           </motion.span>
         ))}
-    </div>
+    </motion.div>
   );
 }

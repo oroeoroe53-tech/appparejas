@@ -190,7 +190,7 @@ export const en = {
       name: "Hug",
       tagline: "A hug you can feel.",
       sealHint: "",
-      notification: "Someone is sending you a hug.",
+      notification: "A hug is waiting for you.",
     },
     voice_note: {
       name: "Voice note",
@@ -639,7 +639,7 @@ export const en = {
     sending: "Sending…",
     sentLine: "Hug sent. Their phone will buzz.",
     content: "A hug",
-    pushBody: "Is sending you a hug",
+    pushBody: "🤗 Is hugging you tight",
     received: (name: string) => `${name} is hugging you`,
     sending_to: (name: string) => `Hugging ${name}`,
     close: "Close",
