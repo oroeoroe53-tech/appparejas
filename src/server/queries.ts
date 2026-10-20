@@ -253,6 +253,9 @@ export interface PhotoRow {
   storage_path: string;
   caption: string | null;
   taken_on: string | null;
+  lat: number | null;
+  lng: number | null;
+  place: string | null;
   created_by: string;
   created_at: string;
 }
@@ -272,7 +275,7 @@ export async function getAlbum(id: string): Promise<AlbumRow | null> {
 
 export async function getPhotos(albumId?: string): Promise<PhotoRow[]> {
   const supabase = await createClient();
-  let q = supabase.from("photos").select("id, album_id, storage_path, caption, taken_on, created_by, created_at").order("created_at", { ascending: false }).limit(500);
+  let q = supabase.from("photos").select("id, album_id, storage_path, caption, taken_on, lat, lng, place, created_by, created_at").order("created_at", { ascending: false }).limit(500);
   if (albumId) q = q.eq("album_id", albumId);
   const { data } = await q;
   return (data ?? []) as PhotoRow[];

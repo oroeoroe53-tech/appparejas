@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/Notice";
 import { t } from "@/content";
 import { compressImage, discardUpload, uploadMedia } from "@/lib/media-client";
+import { nameForPoint, readPhotoMeta } from "@/lib/places";
 
 const MAX_AT_ONCE = 12;
 
@@ -17,6 +18,7 @@ export function PhotoUploader({ spaceId, albumId }: { spaceId: string; albumId: 
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<{ error?: string; notice?: string }>();
   const router = useRouter();
+  const [keepPlace, setKeepPlace] = useState(true);
 
   async function handle(files: FileList | null) {
     if (!files || files.length === 0 || progress) return;
@@ -27,9 +29,12 @@ export function PhotoUploader({ spaceId, albumId }: { spaceId: string; albumId: 
     let failed = false;
     for (const file of list) {
       try {
+        // Read position and date first: compressing drops all metadata.
+        const meta = await readPhotoMeta(file);
+        const location = keepPlace && meta.position ? { ...meta.position, place: (await nameForPoint(meta.position)) || null } : null;
         const blob = await compressImage(file);
         const path = await uploadMedia(spaceId, "photos", blob, "jpg", "image/jpeg");
-        const res = await addPhotoAction({ albumId, path });
+        const res = await addPhotoAction({ albumId, path, takenOn: meta.takenOn, location });
         if (res.ok) ok += 1;
         else {
           failed = true;
@@ -53,6 +58,13 @@ export function PhotoUploader({ spaceId, albumId }: { spaceId: string; albumId: 
       <Button className="w-full" disabled={progress !== null} onClick={() => input.current?.click()} aria-busy={progress !== null}>
         <ImagePlus className="h-5 w-5" aria-hidden /> {progress ? t.albums.uploading(progress.done, progress.total) : t.albums.addPhotos}
       </Button>
+      <label className="mt-3 flex items-start gap-3 text-sm">
+        <input type="checkbox" checked={keepPlace} onChange={(e) => setKeepPlace(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--c-cherry)]" />
+        <span>
+          {t.albums.place.keep}
+          <span className="mt-0.5 block text-[12px] text-muted">{t.albums.place.keepHint}</span>
+        </span>
+      </label>
       <p className="mt-2 text-[12px] text-muted">{t.albums.note}</p>
       <FormMessage error={result?.error} notice={result?.notice} className="mt-3" />
     </div>

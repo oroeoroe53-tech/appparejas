@@ -39,7 +39,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ id: stri
         {photos.length === 0 ? (
           <p className="text-[15px] text-muted">{t.albums.emptyAlbum}</p>
         ) : (
-          <PhotoGrid photos={photos.filter((p) => urls[p.storage_path]).map((p) => ({ id: p.id, url: urls[p.storage_path] as string, caption: p.caption, takenOn: p.taken_on, mine: p.created_by === ctx.user.id }))} />
+          <PhotoGrid photos={photos.filter((p) => urls[p.storage_path]).map((p) => ({ id: p.id, url: urls[p.storage_path] as string, caption: p.caption, takenOn: p.taken_on, lat: p.lat, lng: p.lng, place: p.place, mine: p.created_by === ctx.user.id }))} />
         )}
       </div>
       <p className="mt-8"><Link href="/us/albums" className="text-sm text-muted underline underline-offset-4">{t.common.back}</Link></p>

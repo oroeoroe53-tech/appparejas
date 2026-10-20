@@ -8,6 +8,7 @@ A private PWA for two people. Instead of chat bubbles, messages arrive as small 
 - **Thinking of you:** one tap, no words.
 - **Characters with clothes and life:** each of you draws the other (hair, eyes, glasses… plus tees, hoodies, sweaters, scarves and hats in any colour). The figure sleeps under a moon when it is night where they are, wakes up in the sun by day, and holds up an envelope when you have a message waiting.
 - **Hug:** one tap buzzes their phone (Android vibrates with the notification; iOS ignores vibration patterns) and both characters hug on screen.
+- **Photo map (`/us/albums/map`):** photos can carry a place (from the photo itself, a search, or a tap on the map) and show up as pins with their thumbnail on an OpenStreetMap map. Place names come from Open-Meteo / BigDataCloud, map tiles from OpenStreetMap; only the text you search or the point you tap is sent.
 - **Our book (`/us/book`):** a cute printable keepsake built from what you already saved (story, photos, letters, reasons, daily questions, songs, dreams). Print it on A5 or save it as PDF from the browser.
 - **Letters with ceremony:** Love Letter, Little Note, Heart Message, Hug in Words, Secret Message and Old Letter (parchment, quill, red wax seal). Any message can carry a **song clip** and can be **scheduled** as a time capsule that opens on a chosen morning.
 - **Voice notes and drawings.** A drawing arrives whole on Home (tap for full screen) and, on Android, as the big picture of the notification.

@@ -1,16 +1,21 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { deletePhotoAction } from "@/app/actions/media";
+import { deletePhotoAction, setPhotoPlaceAction } from "@/app/actions/media";
 import { t } from "@/content";
 import { formatDay } from "@/lib/utils";
+import { PlacePicker } from "./PlacePicker";
 
 export interface GridPhoto {
   id: string;
   url: string;
   caption: string | null;
   takenOn: string | null;
+  lat: number | null;
+  lng: number | null;
+  place: string | null;
   mine: boolean;
 }
 
@@ -18,6 +23,8 @@ export interface GridPhoto {
 export function PhotoGrid({ photos }: { photos: GridPhoto[] }) {
   const [open, setOpen] = useState<number | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const router = useRouter();
   const [pending, start] = useTransition();
   const closeBtn = useRef<HTMLButtonElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -87,6 +94,10 @@ export function PhotoGrid({ photos }: { photos: GridPhoto[] }) {
             <div className="min-w-0 text-sm">
               {current.caption && <p className="truncate">{current.caption}</p>}
               {current.takenOn && <p className="text-white/60">{formatDay(current.takenOn)}</p>}
+              <button type="button" onClick={() => setPicking(true)} className="mt-1 inline-flex items-center gap-1.5 text-white/80 underline-offset-4 hover:underline">
+                <MapPin className="h-4 w-4" aria-hidden />
+                {current.lat !== null && current.lng !== null ? `${current.place || t.albums.place.unnamed} · ${t.albums.place.change}` : t.albums.place.add}
+              </button>
             </div>
             {current.mine && (
               confirm ? (
@@ -100,6 +111,20 @@ export function PhotoGrid({ photos }: { photos: GridPhoto[] }) {
             )}
           </div>
         </div>
+      )}
+      {picking && current && (
+        <PlacePicker
+          initial={current.lat !== null && current.lng !== null ? { lat: current.lat, lng: current.lng, name: current.place ?? "" } : null}
+          onClose={() => setPicking(false)}
+          onSave={async (p) => {
+            const res = await setPhotoPlaceAction(current.id, { lat: p.lat, lng: p.lng, place: p.name || null });
+            if (res.ok) {
+              setPicking(false);
+              router.refresh();
+            }
+            return res.ok;
+          }}
+        />
       )}
     </>
   );

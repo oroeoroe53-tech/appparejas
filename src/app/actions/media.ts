@@ -21,11 +21,25 @@ export async function createAlbumAction(_prev: FormState, formData: FormData): P
   return { notice: t.common.saved };
 }
 
-export async function addPhotoAction(input: { albumId: string; path: string; takenOn?: string | null }): Promise<{ ok: boolean }> {
+const placeSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  place: z.string().trim().max(120).nullable().optional(),
+});
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function addPhotoAction(input: { albumId: string; path: string; takenOn?: string | null; location?: { lat: number; lng: number; place?: string | null } | null }): Promise<{ ok: boolean }> {
   const ctx = await getAppContext();
   if (!ctx?.space || !uuid.safeParse(input.albumId).success || !isMediaPath(input.path, ctx.space.id, "photos")) return { ok: false };
   const supabase = await createClient();
-  const { error } = await supabase.from("photos").insert({ album_id: input.albumId, storage_path: input.path, taken_on: input.takenOn ?? null });
+  const loc = input.location ? placeSchema.safeParse(input.location) : null;
+  const takenOn = input.takenOn && DATE.test(input.takenOn) && input.takenOn >= "1950-01-01" && input.takenOn <= "2100-12-31" ? input.takenOn : null;
+  const { error } = await supabase.from("photos").insert({
+    album_id: input.albumId,
+    storage_path: input.path,
+    taken_on: takenOn,
+    ...(loc?.success ? { lat: loc.data.lat, lng: loc.data.lng, place: loc.data.place || null } : {}),
+  });
   if (error) {
     await removeMyFiles([input.path]).catch(() => undefined);
     return { ok: false };
@@ -40,6 +54,20 @@ export async function updateCaptionAction(id: string, caption: string): Promise<
   const supabase = await createClient();
   const { error } = await supabase.from("photos").update({ caption: caption.trim().slice(0, 200) || null }).eq("id", id);
   return { ok: !error };
+}
+
+/** Sets (or clears, with null) where a photo was taken. Either of you can do it. */
+export async function setPhotoPlaceAction(id: string, location: { lat: number; lng: number; place?: string | null } | null): Promise<{ ok: boolean }> {
+  if (!uuid.safeParse(id).success) return { ok: false };
+  const parsed = location ? placeSchema.safeParse(location) : null;
+  if (location && !parsed?.success) return { ok: false };
+  const supabase = await createClient();
+  const values = parsed?.success ? { lat: parsed.data.lat, lng: parsed.data.lng, place: parsed.data.place || null } : { lat: null, lng: null, place: null };
+  const { data, error } = await supabase.from("photos").update(values).eq("id", id).select("album_id").maybeSingle();
+  if (error || !data) return { ok: false };
+  revalidatePath(`/us/albums/${data.album_id}`);
+  revalidatePath("/us/albums/map");
+  return { ok: true };
 }
 
 export async function deletePhotoAction(id: string): Promise<{ ok: boolean }> {

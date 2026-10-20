@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MapPinned } from "lucide-react";
 import Link from "next/link";
 import { AlbumForm } from "@/components/media/AlbumForm";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -18,6 +19,10 @@ export default async function AlbumsPage() {
   return (
     <>
       <PageHeader title={t.albums.title} subtitle={t.albums.subtitle} />
+      <Link href="/us/albums/map" className="mb-6 flex items-center gap-4 rounded-3xl bg-paper px-5 py-4 shadow-soft transition active:scale-[0.99]">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-rose-soft text-cherry"><MapPinned className="h-5 w-5" aria-hidden /></span>
+        <span className="font-medium">{t.albums.map.link(photos.filter((p) => p.lat !== null).length)}</span>
+      </Link>
       <AlbumForm />
       <section className="mt-10" aria-label={t.albums.title}>
         {albums.length === 0 ? (
