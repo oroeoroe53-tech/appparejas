@@ -10,6 +10,7 @@ import { renderFrames, sceneAt } from "@/lib/character";
 import { sanitizeCharacter } from "@/lib/character-options";
 import { freshMood } from "@/lib/mood";
 import { daysTogether, timeAgoParts } from "@/lib/utils";
+import { signedUrls } from "@/server/media";
 import { redirect } from "next/navigation";
 import { requireSpace } from "@/server/guards";
 import { getCharacters, getMoods, getUnreadLetters, getUser, partnerLabel } from "@/server/queries";
@@ -41,9 +42,16 @@ export default async function HomePage() {
   const days = ctx.space.togetherSince ? daysTogether(ctx.space.togetherSince, now) : null;
   const tint = mine ? sanitizeCharacter(mine).backgroundColor : "f9d5dc";
   const ended = ctx.space.status === "ended";
+  // An optional personal background photo. If it can no longer be read, the default look is used.
+  const bgPath = ctx.preferences.home_bg_path;
+  const bgUrl = bgPath ? ((await signedUrls([bgPath], 3 * 3600))[bgPath] ?? null) : null;
+  // A soft veil of the page colour keeps the name and buttons readable on any photo, in light or dark mode.
+  const background = bgUrl
+    ? `linear-gradient(to bottom, color-mix(in srgb, var(--c-cream) 30%, transparent) 0%, color-mix(in srgb, var(--c-cream) 55%, transparent) 55%, color-mix(in srgb, var(--c-cream) 86%, transparent) 100%), url("${bgUrl.replace(/["\\\n]/g, "")}") center / cover no-repeat`
+    : `radial-gradient(120% 70% at 50% 18%, #${tint}cc 0%, transparent 70%)`;
 
   return (
-    <div className="relative -mx-5 min-h-[calc(100dvh-5rem)] px-5 pb-6 pt-8" style={{ background: `radial-gradient(120% 70% at 50% 18%, #${tint}cc 0%, transparent 70%)` }}>
+    <div className="relative -mx-5 min-h-[calc(100dvh-5rem)] px-5 pb-6 pt-8" style={{ background }}>
       {mine ? (
         <div className="flex flex-col items-center text-center">
           <CharacterFigure

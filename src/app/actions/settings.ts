@@ -63,6 +63,25 @@ export async function updatePreferencesAction(input: z.input<typeof prefsSchema>
   return { ok: true };
 }
 
+/** Uses one of your couple's photos as the background of the home screen, or goes back to the default (null). */
+export async function setHomeBackgroundAction(photoId: string | null): Promise<{ ok: boolean }> {
+  const ctx = await getAppContext();
+  if (!ctx) return { ok: false };
+  const supabase = await createClient();
+  let path: string | null = null;
+  if (photoId !== null) {
+    if (!z.string().uuid().safeParse(photoId).success) return { ok: false };
+    // Row level security only returns photos of my own couple.
+    const { data } = await supabase.from("photos").select("storage_path").eq("id", photoId).maybeSingle();
+    if (!data) return { ok: false };
+    path = (data as { storage_path: string }).storage_path;
+  }
+  const { error } = await supabase.from("user_preferences").update({ home_bg_path: path, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id);
+  if (error) return { ok: false };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function deleteAccountAction(_prev: { error?: string } | undefined, formData: FormData): Promise<{ error?: string }> {
   if (String(formData.get("confirm") ?? "").trim() !== t.settings.account.deleteWord) {
     return { error: t.settings.errors.wrongWord };

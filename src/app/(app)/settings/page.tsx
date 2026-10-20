@@ -54,6 +54,13 @@ export default async function SettingsPage() {
       </Section>
       <Section title={s.appearance.title}>
         <ThemePicker theme={ctx.preferences.theme} />
+        <Link href="/settings/background" className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-line bg-paper px-4 py-3 transition active:scale-[0.99]">
+          <span>
+            <span className="block font-medium">{s.appearance.background}</span>
+            <span className="block text-sm text-muted">{s.appearance.backgroundHint}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 flex-none text-stone" aria-hidden />
+        </Link>
       </Section>
       <Section title={s.install.title}>
         <p className="mb-4 text-[15px] text-muted">{s.install.body}</p>

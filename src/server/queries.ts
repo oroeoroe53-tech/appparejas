@@ -19,7 +19,7 @@ export interface AppContext {
   space: SpaceContext | null;
 }
 
-const DEFAULT_PREFS: Preferences = { notifications_enabled: true, notification_preview_mode: "full", theme: "system" };
+const DEFAULT_PREFS: Preferences = { notifications_enabled: true, notification_preview_mode: "full", theme: "system", home_bg_path: null };
 
 export const getAppContext = cache(async (): Promise<AppContext | null> => {
   const user = await getUser();
@@ -29,7 +29,7 @@ export const getAppContext = cache(async (): Promise<AppContext | null> => {
   // One round trip: RLS lets me read my own profile and my partner's, so both come back together.
   const [profilesRes, prefsRes, membersRes, spaceRes] = await Promise.all([
     supabase.from("profiles").select("id, display_name, avatar_url, timezone"),
-    supabase.from("user_preferences").select("notifications_enabled, notification_preview_mode, theme").eq("user_id", user.id).maybeSingle(),
+    supabase.from("user_preferences").select("notifications_enabled, notification_preview_mode, theme, home_bg_path").eq("user_id", user.id).maybeSingle(),
     supabase.from("couple_members").select("couple_space_id, user_id, partner_nickname, joined_at"),
     supabase.from("couple_spaces").select("id, status, together_since").maybeSingle(),
   ]);

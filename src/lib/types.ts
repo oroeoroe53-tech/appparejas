@@ -16,6 +16,8 @@ export interface Preferences {
   notifications_enabled: boolean;
   notification_preview_mode: PreviewMode;
   theme: ThemePreference;
+  /** Storage path of the photo used as the home background; null means the default look. */
+  home_bg_path: string | null;
 }
 
 export interface Message {
