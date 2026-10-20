@@ -13,7 +13,9 @@ import { daysTogether } from "@/lib/utils";
 import { requireSpace } from "@/server/guards";
 import { signedUrls } from "@/server/media";
 import { redirect } from "next/navigation";
-import { getCharacters, getEvents, getHubSummary, getUser, partnerLabel } from "@/server/queries";
+import { MoodPicker } from "@/components/character/MoodPicker";
+import { freshMood } from "@/lib/mood";
+import { getCharacters, getEvents, getHubSummary, getMoods, getUser, partnerLabel } from "@/server/queries";
 
 export const metadata: Metadata = { title: t.meta.titles.us };
 export const dynamic = "force-dynamic";
@@ -32,7 +34,7 @@ export default async function UsPage() {
   if (!user) redirect("/login");
   const now = new Date();
   const today = todayIso(now);
-  const [ctx, { mine, theirs }, summary, events] = await Promise.all([requireSpace({ allowEnded: true }), getCharacters(user.id), getHubSummary(user.id, today), getEvents()]);
+  const [ctx, { mine, theirs }, summary, events, moods] = await Promise.all([requireSpace({ allowEnded: true }), getCharacters(user.id), getHubSummary(user.id, today), getEvents(), getMoods()]);
   const partnerName = partnerLabel(ctx.space, t.common.yourPerson);
   const covers = await signedUrls([summary.albumCoverPath ?? ""]);
   const cover = summary.albumCoverPath ? covers[summary.albumCoverPath] : undefined;
@@ -65,9 +67,12 @@ export default async function UsPage() {
         </div>
         {days !== null && <p className="relative mt-3 text-center text-sm text-cherry">{t.us.dayCount(days)}</p>}
         <div className="relative mt-4 flex flex-wrap justify-center gap-2 text-sm">
-          <Link href="/us/portrait" className="inline-flex min-h-10 items-center rounded-full bg-cherry px-5 font-medium text-on-cherry">{t.hub.seeBig}</Link>
-          <Link href="/us/character" className="inline-flex min-h-10 items-center rounded-full border border-line px-5">{t.hub.edit}</Link>
+          <Link href="/us/character" className="inline-flex min-h-10 items-center rounded-full bg-cherry px-5 font-medium text-on-cherry">{t.hub.edit}</Link>
         </div>
+      </section>
+
+      <section className="mt-6" aria-label={t.hub.mood}>
+        <MoodPicker current={freshMood(moods.find((m) => m.user_id === user.id) ?? null, now.getTime())} />
       </section>
 
       <Group title={t.hub.groups.moments}>

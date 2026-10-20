@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, HeartHandshake, Mail, PenLine, Settings } from "lucide-react";
+import { HeartHandshake, Mail, PenLine, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { t } from "@/content";
@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/home", label: t.nav.home, Icon: Mail, primary: false },
-  { href: "/letters", label: t.nav.letters, Icon: Archive, primary: false },
   { href: "/write", label: t.nav.write, Icon: PenLine, primary: true },
   { href: "/us", label: t.nav.us, Icon: HeartHandshake, primary: false },
   { href: "/settings", label: t.nav.settings, Icon: Settings, primary: false },
@@ -44,12 +43,12 @@ export function BottomNav({ unread }: { unread: number }) {
               >
                 <span className="relative">
                   <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2 : 1.6} aria-hidden />
-                  {href === "/home" && unread > 0 && (
+                  {href === "/settings" && unread > 0 && (
                     <span className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full bg-cherry ring-2 ring-cream" aria-hidden />
                   )}
                 </span>
                 {label}
-                {href === "/home" && unread > 0 && <span className="sr-only">{t.a11y.unreadCount(unread)}</span>}
+                {href === "/settings" && unread > 0 && <span className="sr-only">{t.a11y.unreadCount(unread)}</span>}
               </Link>
             </li>
           );

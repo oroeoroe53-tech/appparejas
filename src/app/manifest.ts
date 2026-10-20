@@ -16,7 +16,6 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#FAF7F2",
     shortcuts: [
       { name: t.meta.shortcuts.write.name, short_name: t.meta.shortcuts.write.short, url: "/write", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: t.meta.shortcuts.portrait.name, short_name: t.meta.shortcuts.portrait.short, url: "/us/portrait", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: t.meta.shortcuts.letters.name, short_name: t.meta.shortcuts.letters.short, url: "/letters", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
     categories: ["lifestyle", "social"],

@@ -325,6 +325,7 @@ export const en = {
     jar: (mine: number, theirs: number) => (theirs > 0 ? `${theirs} reasons for you` : mine > 0 ? `${mine} from you` : "Why you love them"),
     openWhen: (n: number) => (n > 0 ? (n === 1 ? "1 letter waiting for you" : `${n} letters waiting for you`) : "For the moments they need you"),
     together: "Our day",
+    mood: "How are you feeling?",
     book: "Our book",
   },
   us: {
@@ -667,6 +668,12 @@ export const en = {
     pushBodyDrawing: "Sent you a drawing",
   },
   song: {
+    sendButton: "Send a song",
+    sendTitle: "Send them a song",
+    sendAction: "Send song",
+    sending: "Sending…",
+    sent: "Song sent. It plays when they open it.",
+    sendContent: (title: string, artist: string) => `🎵 A song for you: ${title} — ${artist}`,
     sectionTitle: "A song to go with it",
     add: "Add a song",
     change: "Change song",
@@ -762,6 +769,8 @@ export const en = {
     toThem: (name: string) => `To ${name}`,
   },
   settings: {
+    lettersLink: "Letters",
+    lettersHint: "Everything you have written to each other",
     title: "Settings",
     profile: {
       title: "Profile",

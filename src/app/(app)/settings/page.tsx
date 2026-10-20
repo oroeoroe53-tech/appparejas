@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Archive, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { LeaveSpaceForm, DeleteAccountForm } from "@/components/settings/DangerZone";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { signOutAction } from "@/app/actions/auth";
 import { t } from "@/content";
-import { getAppContext, partnerLabel } from "@/server/queries";
+import { getAppContext, getUnreadLetters, getUser, partnerLabel } from "@/server/queries";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: t.meta.titles.settings };
@@ -24,13 +25,27 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default async function SettingsPage() {
-  const ctx = await getAppContext();
+  const user = await getUser();
+  if (!user) redirect("/login");
+  const [ctx, unreadItems] = await Promise.all([getAppContext(), getUnreadLetters(user.id)]);
   if (!ctx) redirect("/login");
+  const unread = ctx.space ? unreadItems.length : 0;
   const s = t.settings;
   const space = ctx.space;
   return (
     <>
       <PageHeader title={s.title} />
+      <Link href="/letters" className="mb-2 flex items-center gap-4 rounded-3xl bg-paper px-5 py-4 shadow-soft transition active:scale-[0.99]">
+        <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-rose-soft text-cherry">
+          <Archive className="h-5 w-5" aria-hidden />
+          {unread > 0 && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-cherry px-1 text-[11px] font-medium text-on-cherry">{unread}</span>}
+        </span>
+        <span className="flex-1">
+          <span className="block font-medium">{s.lettersLink}</span>
+          <span className="block text-sm text-muted">{unread > 0 ? t.a11y.unreadCount(unread) : s.lettersHint}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 text-stone" aria-hidden />
+      </Link>
       <Section title={s.profile.title}>
         <ProfileForm displayName={ctx.profile.display_name} avatarUrl={ctx.profile.avatar_url} partnerNickname={space?.partnerNickname ?? null} hasPartner={space?.status === "active"} />
       </Section>

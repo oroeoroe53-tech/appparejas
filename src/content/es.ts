@@ -327,6 +327,7 @@ export const es: Copy = {
     jar: (mine: number, theirs: number) => (theirs > 0 ? `${theirs} motivos para ti` : mine > 0 ? `${mine} tuyos` : "Por qué le quieres"),
     openWhen: (n: number) => (n > 0 ? (n === 1 ? "1 carta te espera" : `${n} cartas te esperan`) : "Para los momentos en que te necesite"),
     together: "Nuestro día",
+    mood: "¿Cómo te sientes?",
     book: "Nuestro libro",
   },
   us: {
@@ -669,6 +670,12 @@ export const es: Copy = {
     pushBodyDrawing: "Te ha enviado un dibujo",
   },
   song: {
+    sendButton: "Mandar una canción",
+    sendTitle: "Mándale una canción",
+    sendAction: "Enviar canción",
+    sending: "Enviando…",
+    sent: "Canción enviada. Suena cuando la abra.",
+    sendContent: (title: string, artist: string) => `🎵 Una canción para ti: ${title} — ${artist}`,
     sectionTitle: "Una canción para acompañarlo",
     add: "Añadir una canción",
     change: "Cambiar canción",
@@ -764,6 +771,8 @@ export const es: Copy = {
     toThem: (name: string) => `Para ${name}`,
   },
   settings: {
+    lettersLink: "Cartas",
+    lettersHint: "Todo lo que os habéis escrito",
     title: "Ajustes",
     profile: {
       title: "Perfil",
